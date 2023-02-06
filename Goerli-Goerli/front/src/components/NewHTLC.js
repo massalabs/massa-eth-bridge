@@ -9,11 +9,8 @@ const NewHTLC = () => {
     const timelockRef = React.useRef();
     const amountRef = React.useRef();
 
-    if (window.ethereum) {
-        const provider = new AlchemyProvider("goerli", "kWBvEiso-d70OEPlThp6oJknYBr6XMlO")
-        console.log(provider)
-    }
-     
+    const provider = new AlchemyProvider("goerli", "kWBvEiso-d70OEPlThp6oJknYBr6XMlO")
+
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -23,6 +20,9 @@ const NewHTLC = () => {
         const timelock = timelockRef.current.value
 
         console.log(receiver + ' ' + amount + ' ' + timelock);
+
+        const block = await provider.getBlockNumber()
+        console.log(block)
     };
 
     return (
