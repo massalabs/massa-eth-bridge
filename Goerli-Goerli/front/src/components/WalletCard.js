@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { ethers } from "ethers";
+import './WalletCard.css';
 
 const WalletCard = () => {
     // Properties
@@ -13,11 +14,9 @@ const WalletCard = () => {
 
         // ❌ Check if Meta Mask Extension exists 
         if (window.ethereum) {
-            console.log('detected');
             const accounts = await window.ethereum.request({
                 method: "eth_requestAccounts",
             });
-            console.log(accounts[0])
             //const provider = new ethers.getDefaultProvider("goerli")
             //const provider = new ethers.AlchemyProvider("goerli", "kWBvEiso-d70OEPlThp6oJknYBr6XMlO")
             const balance = await window.ethereum.request({
@@ -34,10 +33,9 @@ const WalletCard = () => {
 
     return (
         <div className="WalletCard">
-            <h3 className="h4">
+            <h3 className="h4" id="welcome">
                 Welcome to a decentralized Application
             </h3>
-            <button onClick={requestAccount}>CONNECT WALLET(METAMASK) </button>
             <div className="displayAccount">
                 <h4 className="walletAddress">Address: {walletAddress} </h4>
                 <div className="balanceDisplay">
@@ -46,6 +44,7 @@ const WalletCard = () => {
                     </h3>
                 </div>
             </div>
+            <button id="metamask" onClick={requestAccount}>CONNECT WALLET(METAMASK) </button>
         </div>
     )
 }
