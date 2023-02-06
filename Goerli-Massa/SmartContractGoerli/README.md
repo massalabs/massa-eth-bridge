@@ -1,1 +1,0 @@
-# My Goerli Smart-contract

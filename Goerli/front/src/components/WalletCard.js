@@ -24,7 +24,7 @@ const WalletCard = () => {
                 params: [accounts[0], 'latest']
             })
             setWalletAddress(accounts[0]);
-            setWalletBalance(ethers.formatEther(balance))
+            setWalletBalance(ethers.utils.formatEther(balance))
 
         } else {
             alert('Meta Mask not detected');
