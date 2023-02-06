@@ -7,7 +7,6 @@ const WalletCard = () => {
 
     const [walletAddress, setWalletAddress] = useState("");
     const [walletBalance, setWalletBalance] = useState("");
-    const [Block, setBlock] = useState("");
 
     async function requestAccount() {
         console.log('Requesting account...');
@@ -19,15 +18,14 @@ const WalletCard = () => {
                 method: "eth_requestAccounts",
             });
             console.log(accounts[0])
-            const provider = new ethers.getDefaultProvider("goerli")
+            //const provider = new ethers.getDefaultProvider("goerli")
             //const provider = new ethers.AlchemyProvider("goerli", "kWBvEiso-d70OEPlThp6oJknYBr6XMlO")
-            const balance = await provider.getBalance(accounts[0])
-            console.log(balance)
-            const balanceInEther = ethers.formatEther(balance);
-            const block = await provider.getBlockNumber();
+            const balance = await window.ethereum.request({
+                method:'eth_getBalance', 
+                params: [accounts[0], 'latest']
+            })
             setWalletAddress(accounts[0]);
-            setWalletBalance(balanceInEther);
-            setBlock(block);
+            setWalletBalance(ethers.formatEther(balance))
 
         } else {
             alert('Meta Mask not detected');
@@ -46,7 +44,6 @@ const WalletCard = () => {
                     <h3>
                         Wallet Amount: {walletBalance}
                     </h3>
-                    <p> current block : {Block} </p>
                 </div>
             </div>
         </div>
