@@ -33,19 +33,19 @@ const ContractERC20Bb = new ethers.Contract(CONTRACT_ADDRESS_ERC20_B, contractER
 
 async function main() {
 
-
-    //const increaseAllA = await ContractERC20Aa.increaseAllowance(CONTRACT_ADDRESS_SWAP_ERC20_A, 10)
-    //console.log("increase in SwapA : ", increaseAllA)
+/*
+    const increaseAllA = await ContractERC20Aa.increaseAllowance(CONTRACT_ADDRESS_SWAP_ERC20_A, 10)
+    console.log("increase in SwapA : ", increaseAllA)
   
-    //const increaseAllB = await ContractERC20Bb.increaseAllowance(CONTRACT_ADDRESS_SWAP_ERC20_B, 20)
-    //console.log("increase in SwapA : ", increaseAllB)
-
+    const increaseAllB = await ContractERC20Bb.increaseAllowance(CONTRACT_ADDRESS_SWAP_ERC20_B, 20)
+    console.log("increase in SwapA : ", increaseAllB)
+*/
     const allA = await ContractERC20Aa.allowance(PUBLIC_KEYA, CONTRACT_ADDRESS_SWAP_ERC20_A)
     console.log("Allowance in SwapA with Token A : ", allA)
 
     const allB = await ContractERC20Bb.allowance(PUBLIC_KEYB, CONTRACT_ADDRESS_SWAP_ERC20_B)
     console.log("Allowance in SwapB with Token B : ", allB)
-
+/*
     const pwd2 = "monmotdepasse"
     const bytes = ethers.utils.toUtf8Bytes(pwd2)
     const h2 = ethers.utils.sha256(bytes)
@@ -60,8 +60,8 @@ async function main() {
     console.log("string ID : ", ethers.utils.parseBytes32String(ID))
     console.log("ID is : ", ID)
 
-    //const openA = await SwapERC20Aa.open(ID, 10, CONTRACT_ADDRESS_ERC20_A, PUBLIC_KEYB, h2, 40)
-    //const openB = await SwapERC20Bb.open(ID, 20, CONTRACT_ADDRESS_ERC20_B, PUBLIC_KEYA, h2, 3)
+    const openA = await SwapERC20Aa.open(ID, 10, CONTRACT_ADDRESS_ERC20_A, PUBLIC_KEYB, h2, 40)
+    const openB = await SwapERC20Bb.open(ID, 20, CONTRACT_ADDRESS_ERC20_B, PUBLIC_KEYA, h2, 3)
 
     const stateOfIdA = await SwapERC20Aa.check(ID)
     console.log("state of", ID, " on contract A : ", stateOfIdA)
@@ -69,12 +69,12 @@ async function main() {
     const stateOfIdB = await SwapERC20Bb.check(ID)
     console.log("state of", ID, " on contract B : ", stateOfIdB)
 
-    //const closeIdInB = await SwapERC20Ba.close(ID, ethers.utils.toUtf8Bytes("monmotdepasse"))
-    //console.log("close event : " + closeIdInB)
+    const closeIdInB = await SwapERC20Ba.close(ID, ethers.utils.toUtf8Bytes("monmotdepasse"))
+    console.log("close event : " + closeIdInB)
 
-    //const closeIdInA = await SwapERC20Ab.close(ID, ethers.utils.toUtf8Bytes("monmotdepasse"))
-    //console.log("close event : " + closeIdInA)
-
+    const closeIdInA = await SwapERC20Ab.close(ID, ethers.utils.toUtf8Bytes("monmotdepasse"))
+    console.log("close event : " + closeIdInA)
+*/
 
 
  }

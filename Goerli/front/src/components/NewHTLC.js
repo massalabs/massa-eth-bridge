@@ -1,129 +1,122 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from "ethers";
 import { providers } from "ethers";
-import { AlchemyProvider } from 'ethers';
 import './NewHTLC.css';
 
-import { CONTRACT_ADDRESS_SWAP_ERC20_A } from '../constant'
-import { CONTRACT_ADDRESS_SWAP_ERC20_B } from '../constant'
-import { CONTRACT_ADDRESS_ERC20_A } from '../constant'
-import { CONTRACT_ADDRESS_ERC20_B } from '../constant'
-import { PUBLIC_KEYA } from '../constant'
-import { PUBLIC_KEYB } from '../constant'
+import { CONTRACT_ADDRESS_SWAP_ERC20 } from '../constant'
+import { CONTRACT_ADDRESS_ERC20 } from '../constant'
 
 const NewHTLC = () => {
-
-    const [signer, setSigner] = useState(null);
 
     const receiverRef = React.useRef();
     const timelockRef = React.useRef();
     const amountRef = React.useRef();
+    const passwordRef = React.useRef();
+    const allowanceRef = React.useRef();
 
-    const swapERC20A = require("../contracts/SwapERC20A.sol/AtomicSwapERC20A.json");
-    const swapERC20B = require("../contracts/SwapERC20B.sol/AtomicSwapERC20B.json");
-    const contractERC20A = require("../contracts/Token.sol/TokenA.json");
-    const contractERC20B = require("../contracts/Token.sol/TokenB.json");
+    const [symbol, setsymbol] = useState("");
+    const [name, setname] = useState("");
+    const [allowance, setAllowance] = useState("");
 
-    //const provider = new AlchemyProvider("goerli", "kWBvEiso-d70OEPlThp6oJknYBr6XMlO")
+    const swapERC20 = require("../contracts/SwapERC20A.sol/AtomicSwapERC20A.json");
+    const contractERC20 = require("../contracts/Token.sol/TokenA.json");
+
     const provider = new providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner()
 
-    const contract_SWAP_ERC20_A = new ethers.Contract(CONTRACT_ADDRESS_SWAP_ERC20_A, swapERC20A.abi, provider.getSigner());
-    const contract_ERC20_A = new ethers.Contract(CONTRACT_ADDRESS_ERC20_A, contractERC20A.abi, provider.getSigner());
+    const contract_SWAP_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_SWAP_ERC20, swapERC20.abi, signer);
+    const contract_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_ERC20, contractERC20.abi, signer);
 
+    useEffect(() => {
+        async function allowance() {
+            const accounts = await window.ethereum.request({
+                method: "eth_requestAccounts",
+            });
+            const allowance = await contract_ERC20.allowance(accounts[0], CONTRACT_ADDRESS_SWAP_ERC20)
+            setAllowance(parseInt(allowance._hex, 16))
+        }
+        async function getSymbolName() {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS_ERC20, contractERC20.abi, provider);
+            const symbol = await contract.symbol();
+            const name = await contract.name();
+            setname(name)
+            setsymbol(symbol)
+        }
+        allowance()
+        getSymbolName()
+    })
 
     const handleSubmit = async (event) => {
         event.preventDefault();
 
         const receiver = receiverRef.current.value
-        let amount = amountRef.current.value
-        const timelock = timelockRef.current.value
-        if (amount == "") {
-            amount = 0
-        }
+        const amount = Number(amountRef.current.value)
+        const timelock = Number(timelockRef.current.value)
+        const password = passwordRef.current.value
 
-        const block = await provider.getBlockNumber()
-        console.log(block)
+        const passwordInBytes = ethers.utils.toUtf8Bytes(password)
+        const hash = ethers.utils.sha256(passwordInBytes)
 
-        const result = await contract_ERC20_A.allowance(PUBLIC_KEYA, CONTRACT_ADDRESS_SWAP_ERC20_A)
-        console.log(parseFloat(result._hex));
-        if (parseFloat(result._hex) < amount && parseFloat(result._hex) > 0) {
-            alert('increase allowance of this ERC20')
-        } else {
-            const pwd2 = "monmotdepasse"
-            const bytes = ethers.utils.toUtf8Bytes(pwd2)
-            const h2 = ethers.utils.sha256(bytes)
-            console.log("sha256 of monmotdepasse : ", h2)
+        const ID = ethers.utils.formatBytes32String("react3")
+        console.log("string ID : ", ethers.utils.parseBytes32String(ID))
+        console.log("ID is : ", ID)
 
-            const ID = ethers.utils.formatBytes32String("react1")
-            console.log("string ID : ", ethers.utils.parseBytes32String(ID))
-            console.log("ID is : ", ID)
-            //const tx = await window.ethereum.CONTRACT_ADDRESS_SWAP_ERC20_A.open(ID, 10, CONTRACT_ADDRESS_ERC20_A, PUBLIC_KEYB, h2, 40)
-            //console.log(tx)
-
-
-            // Define the Transaction Data
-            let iface = new ethers.utils.Interface(swapERC20A.abi)
-            const TransactionData = iface.encodeFunctionData({
-                name: 'open',
-                type: 'function',
-                inputs: [{
-                    type: 'string',
-                    name: ID
-                }, {
-                    type: 'uint256',
-                    name: amount
-                }, {
-                    type: 'string',
-                    name: CONTRACT_ADDRESS_ERC20_A
-                }, {
-                    type: 'string',
-                    name: receiver
-                }, {
-                    type: 'string',
-                    name: h2
-                }, {
-                    type: 'uint256',
-                    name: timelock
-                }]
-            }, ['2345675643', 'Hello!%']);
-
-            const transactionParameters = {
-                nonce: '0x00', // ignored by MetaMask
-                gasPrice: '0x09184e72a000', // customizable by user during MetaMask confirmation.
-                gas: '0x2710', // customizable by user during MetaMask confirmation.
-                to: CONTRACT_ADDRESS_SWAP_ERC20_A, // Required except during contract publications.
-                from: window.ethereum.selectedAddress, // must match user's active address.
-                value: '0x00', // Only required to send ether to the recipient from the initiating external account.
-                data: TransactionData, // Optional, but used for defining smart contract creation and interaction.
-                chainId: '0x5', // Used to prevent transaction reuse across blockchains. Auto-filled by MetaMask.
-            };
-
-            // txHash is a hex string
-            // As with any RPC call, it may throw an error
-            const txHash = await window.ethereum.request({
-                method: 'eth_sendTransaction',
-                params: [transactionParameters],
-            });
+        if (amount > 0 && amount < allowance && timelock >= 0) {
+            const swapWithSigner = contract_SWAP_ERC20.connect(signer)
+            const openHTLC = swapWithSigner.open(ID, amount, CONTRACT_ADDRESS_ERC20, receiver, hash, timelock)
+        } else{
+            alert('error')
         }
     };
 
+    const encreaseAllowance = async (event) => {
+        event.preventDefault();
+
+        const allowanceAmount = Number(allowanceRef.current.value)
+        const allowance = await contract_ERC20.increaseAllowance(CONTRACT_ADDRESS_SWAP_ERC20, allowanceAmount)
+    }
+
     return (
-        <div className="NewHTLC">
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="receiver">Receiver</label>
-                    <input id="receiver" type="text" ref={receiverRef} />
-                </div>
-                <div>
-                    <label htmlFor="amount">Amount</label>
-                    <input id="amount" type="number" ref={amountRef} />
-                </div>
-                <div>
-                    <label htmlFor="timelock">Timelock</label>
-                    <input id="timelock" type="number" ref={timelockRef} />
-                </div>
-                <button type="submit">Create</button>
-            </form>
+        <div className="HTLC">
+            <div className="NewHTLC">
+                <form onSubmit={handleSubmit}>
+                    <div>
+                        <label htmlFor="receiver">Receiver</label>
+                        <input id="receiver" type="text" ref={receiverRef} />
+                    </div>
+                    <div>
+                        <label htmlFor="amount">Amount</label>
+                        <input id="amount" type="number" ref={amountRef} />
+                    </div>
+                    <div>
+                        <label htmlFor="timelock">Timelock</label>
+                        <input id="timelock" type="number" ref={timelockRef} />
+                    </div>
+                    <div>
+                        <label htmlFor="password">Password</label>
+                        <input id="password" type="text" ref={passwordRef} />
+                    </div>
+                    <button type="submit">Create</button>
+                </form>
+            </div>
+            <div>
+                <h2>
+                    Name:  {name}
+                </h2>
+                <h2>
+                    Symbol: {symbol}
+                </h2>
+                <h2>
+                    Your allowance: {allowance}
+                </h2>
+                <form onSubmit={encreaseAllowance}>
+                    <div>
+                        <label htmlFor="allowance">Amount</label>
+                        <input id="allowance" type="number" ref={allowanceRef} />
+                    </div>
+                    <button type="submit">increase</button>
+                </form>
+            </div>
         </div>
     )
 }

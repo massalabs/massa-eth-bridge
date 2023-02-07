@@ -1,33 +1,27 @@
-import React, { Component }  from 'react';
-import { useState } from 'react';
+
+import React, { Component, useState }  from 'react';
 import { ethers } from "ethers";
 import './WalletCard.css';
 
 const WalletCard = () => {
-    // Properties
-
     const [walletAddress, setWalletAddress] = useState("");
     const [walletBalance, setWalletBalance] = useState("");
 
     async function requestAccount() {
-        console.log('Requesting account...');
 
         // ❌ Check if Meta Mask Extension exists 
         if (window.ethereum) {
             const accounts = await window.ethereum.request({
                 method: "eth_requestAccounts",
             });
-            //const provider = new ethers.getDefaultProvider("goerli")
-            //const provider = new ethers.AlchemyProvider("goerli", "kWBvEiso-d70OEPlThp6oJknYBr6XMlO")
             const balance = await window.ethereum.request({
-                method:'eth_getBalance', 
+                method: 'eth_getBalance',
                 params: [accounts[0], 'latest']
             })
             setWalletAddress(accounts[0]);
             setWalletBalance(ethers.utils.formatEther(balance))
-
         } else {
-            alert('Meta Mask not detected');
+            alert('MetaMask not detected');
         }
     }
 
