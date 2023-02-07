@@ -12,7 +12,7 @@ import { PUBLIC_KEYA } from '../constant'
 import { PUBLIC_KEYB } from '../constant'
 
 const NewHTLC = () => {
-    
+
     const [signer, setSigner] = useState(null);
 
     const receiverRef = React.useRef();
@@ -57,28 +57,54 @@ const NewHTLC = () => {
             const ID = ethers.utils.formatBytes32String("react1")
             console.log("string ID : ", ethers.utils.parseBytes32String(ID))
             console.log("ID is : ", ID)
-            const tx = await window.ethereum.CONTRACT_ADDRESS_SWAP_ERC20_A.open(ID, 10, CONTRACT_ADDRESS_ERC20_A, PUBLIC_KEYB, h2, 40)
-            console.log(tx)
+            //const tx = await window.ethereum.CONTRACT_ADDRESS_SWAP_ERC20_A.open(ID, 10, CONTRACT_ADDRESS_ERC20_A, PUBLIC_KEYB, h2, 40)
+            //console.log(tx)
+
+
+            // Define the Transaction Data
+            let iface = new ethers.utils.Interface(swapERC20A.abi)
+            const TransactionData = iface.encodeFunctionData({
+                name: 'open',
+                type: 'function',
+                inputs: [{
+                    type: 'string',
+                    name: ID
+                }, {
+                    type: 'uint256',
+                    name: amount
+                }, {
+                    type: 'string',
+                    name: CONTRACT_ADDRESS_ERC20_A
+                }, {
+                    type: 'string',
+                    name: receiver
+                }, {
+                    type: 'string',
+                    name: h2
+                }, {
+                    type: 'uint256',
+                    name: timelock
+                }]
+            }, ['2345675643', 'Hello!%']);
+
+            const transactionParameters = {
+                nonce: '0x00', // ignored by MetaMask
+                gasPrice: '0x09184e72a000', // customizable by user during MetaMask confirmation.
+                gas: '0x2710', // customizable by user during MetaMask confirmation.
+                to: CONTRACT_ADDRESS_SWAP_ERC20_A, // Required except during contract publications.
+                from: window.ethereum.selectedAddress, // must match user's active address.
+                value: '0x00', // Only required to send ether to the recipient from the initiating external account.
+                data: TransactionData, // Optional, but used for defining smart contract creation and interaction.
+                chainId: '0x5', // Used to prevent transaction reuse across blockchains. Auto-filled by MetaMask.
+            };
+
+            // txHash is a hex string
+            // As with any RPC call, it may throw an error
+            const txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [transactionParameters],
+            });
         }
-
-        const transactionParameters = {
-            nonce: '0x00', // ignored by MetaMask
-            gasPrice: '0x09184e72a000', // customizable by user during MetaMask confirmation.
-            gas: '0x2710', // customizable by user during MetaMask confirmation.
-            to: '0x0000000000000000000000000000000000000000', // Required except during contract publications.
-            from: window.ethereum.selectedAddress, // must match user's active address.
-            value: '0x00', // Only required to send ether to the recipient from the initiating external account.
-            data:
-                '0x7f7465737432000000000000000000000000000000000000000000000000000000600057', // Optional, but used for defining smart contract creation and interaction.
-            chainId: '0x3', // Used to prevent transaction reuse across blockchains. Auto-filled by MetaMask.
-        };
-
-        // txHash is a hex string
-        // As with any RPC call, it may throw an error
-        const txHash = await window.ethereum.request({
-            method: 'eth_sendTransaction',
-            params: [transactionParameters],
-        });
     };
 
     return (
