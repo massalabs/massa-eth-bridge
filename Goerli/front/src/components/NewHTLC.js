@@ -17,6 +17,7 @@ const NewHTLC = () => {
     const [symbol, setsymbol] = useState("");
     const [name, setname] = useState("");
     const [allowance, setAllowance] = useState("");
+    const [swaps, setSwaps] = useState([]);
 
     const swapERC20 = require("../contracts/SwapERC20A.sol/AtomicSwapERC20A.json");
     const contractERC20 = require("../contracts/Token.sol/TokenA.json");
@@ -26,6 +27,7 @@ const NewHTLC = () => {
 
     const contract_SWAP_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_SWAP_ERC20, swapERC20.abi, signer);
     const contract_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_ERC20, contractERC20.abi, signer);
+    const contract_SWAP_ERC20_provider = new ethers.Contract(CONTRACT_ADDRESS_SWAP_ERC20, swapERC20.abi, provider);
 
     useEffect(() => {
         async function allowance() {
@@ -57,14 +59,20 @@ const NewHTLC = () => {
         const passwordInBytes = ethers.utils.toUtf8Bytes(password)
         const hash = ethers.utils.sha256(passwordInBytes)
 
-        const ID = ethers.utils.formatBytes32String("react3")
-        console.log("string ID : ", ethers.utils.parseBytes32String(ID))
-        console.log("ID is : ", ID)
+
+        const filterOpen = contract_SWAP_ERC20.filters.Open()
+        const logsOpen = await contract_SWAP_ERC20.queryFilter(filterOpen)
+        const lastId = logsOpen[logsOpen.length -1].args._swapID
+        const newId = parseInt(String.fromCharCode(...lastId.substr(2).match(/.{2}/g).map(function (a) {
+            return parseInt(a, 16);
+        }))) + 1
+        const newIdInString = newId.toString()
+        const ID = ethers.utils.formatBytes32String(newIdInString)
 
         if (amount > 0 && amount < allowance && timelock >= 0) {
             const swapWithSigner = contract_SWAP_ERC20.connect(signer)
             const openHTLC = swapWithSigner.open(ID, amount, CONTRACT_ADDRESS_ERC20, receiver, hash, timelock)
-        } else{
+        } else {
             alert('error')
         }
     };

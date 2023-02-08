@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import WalletCard from './components/WalletCard';
 import NewHTLC from './components/NewHTLC';
-import CloseHTLC from './components/CloseHTLC';
 import Events from './components/Events';
 import reportWebVitals from './reportWebVitals';
 
@@ -12,7 +11,6 @@ root.render(
   <React.StrictMode>
     <WalletCard />
     <NewHTLC />
-    <CloseHTLC />
     <Events />
   </React.StrictMode>
 );
