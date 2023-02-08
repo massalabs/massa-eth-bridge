@@ -1,9 +1,11 @@
 
-import React, { Component, useState }  from 'react';
+import React, { useState }  from 'react';
 import { ethers } from "ethers";
 import './WalletCard.css';
 
 const WalletCard = () => {
+
+        // Creating variable to store user's information
     const [walletAddress, setWalletAddress] = useState("");
     const [walletBalance, setWalletBalance] = useState("");
 
@@ -31,7 +33,7 @@ const WalletCard = () => {
                 Welcome to a decentralized Application
             </h3>
             <div className="displayAccount">
-                <h4 className="walletAddress">Address: {walletAddress} </h4>
+                <h4 className="walletAddress">Address: <div>{walletAddress}</div> </h4>
                 <div className="balanceDisplay">
                     <h3>
                         Wallet Amount: {walletBalance}
