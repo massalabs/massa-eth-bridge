@@ -21,33 +21,28 @@ const Events = () => {
 
         async function fetchSwaps() {
             function compareAndRemove(list1, list2) {
-                return list1.filter(function (item) {
-                    return !list2.includes(item);
-                });
+                let result = []
+                let incr = 0
+                for (let i = 0; i < list1.length; i++) {
+                    for (let j = 0; j < list2.length; j++) {
+                        if (list1[i].args._swapID !== list2[j].args._swapID) {
+                            incr = incr + 1
+                        }
+                        if (incr == list2.length) {
+                            result.push(list1[i])
+                        }
+                    }
+                    incr = 0
+                }
+                return result
             }
-
-            let IDsOpen = []
-            let IDsClose = []
-            let SwapsString = []
-
             const filterOpen = contract_SWAP_ERC20.filters.Open()
             const logsOpen = await contract_SWAP_ERC20.queryFilter(filterOpen)
 
             const filterClose = contract_SWAP_ERC20.filters.Close()
             const logsClose = await contract_SWAP_ERC20.queryFilter(filterClose)
-
-            for (let i in logsOpen) {
-                IDsOpen.push(logsOpen[i].args._swapID)
-                IDsClose.push(logsClose[i]?.args._swapID)
-            }
-            const SwapsInHex = compareAndRemove(IDsOpen, IDsClose)
-
-            for (let i in SwapsInHex) {
-                SwapsString.push(String.fromCharCode(...SwapsInHex[i].substr(2).match(/.{2}/g).map(function(a) {
-                    return parseInt(a, 16);
-                  })))
-            }
-            setSwap(SwapsString)
+            console.log(logsOpen)
+            setSwap(compareAndRemove(logsOpen, logsClose))
         }
         fetchSwaps()
 
@@ -64,8 +59,18 @@ const Events = () => {
                     <table key={index}>
                         <tbody>
                             <tr>
-                                <td>{item}</td>
-                                <td>{item}</td>
+                                <th scope="col">_swapID</th>
+                                <th scope="col">_swapID In Hex</th>
+                                <th scope="col">_withdrawTrader</th>
+                                <th scope="col">_secretLock</th>
+                            </tr>
+                            <tr>
+                                <td>{String.fromCharCode(...item.args._swapID.substr(2).match(/.{2}/g).map(function (a) {
+                                    return parseInt(a, 16);
+                                }))}</td>
+                                <td>{item.args._swapID}</td>
+                                <td>{item.args._withdrawTrader}</td>
+                                <td>{item.args._secretLock}</td>
                             </tr>
                         </tbody>
                     </table>
