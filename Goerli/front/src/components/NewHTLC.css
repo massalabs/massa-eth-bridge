@@ -1,5 +1,15 @@
-.HTLC{
+.HTLC {
     display: flex;
     align-items: center;
     justify-content: space-evenly;
+}
+
+div {
+    margin-bottom: 10px;
+}
+
+label {
+    display: inline-block;
+    width: 150px;
+    text-align: right;
 }

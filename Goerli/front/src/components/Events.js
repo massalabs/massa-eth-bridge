@@ -8,14 +8,11 @@ import { CONTRACT_ADDRESS_SWAP_ERC20 } from '../constant'
 const Events = () => {
 
     const [inputValues, setInputValues] = useState([]);
-
     const [swap, setSwap] = useState([]);
 
     const swapERC20 = require("../contracts/SwapERC20A.sol/AtomicSwapERC20A.json");
-
     const provider = new providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner()
-
     const contract_SWAP_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_SWAP_ERC20, swapERC20.abi, provider);
 
     const handleInputChange = (index) => (event) => {
@@ -35,7 +32,6 @@ const Events = () => {
 
 
     useEffect(() => {
-
         async function fetchSwaps() {
             function compareAndRemove(list1, list2) {
                 let result = []
@@ -66,7 +62,7 @@ const Events = () => {
 
 
     return (
-        <div className="NewHTLC">
+        <div className="ListHTLC">
             <h1>
                 Swap List :
             </h1>
@@ -76,10 +72,10 @@ const Events = () => {
                         <table key={index}>
                             <tbody>
                                 <tr>
-                                    <th scope="col">_swapID</th>
-                                    <th scope="col">_swapID In Hex</th>
-                                    <th scope="col">_withdrawTrader</th>
-                                    <th scope="col">_secretLock</th>
+                                    <th scope="col">swapID</th>
+                                    <th scope="col">swapID In Hex</th>
+                                    <th scope="col">address of withdraw</th>
+                                    <th scope="col">secretLock</th>
                                 </tr>
                                 <tr>
                                     <td>{String.fromCharCode(...item.args._swapID.substr(2).match(/.{2}/g).map(function (a) {
@@ -95,8 +91,8 @@ const Events = () => {
                             <div>
                                 <label>SecretKey</label>
                                 <input type="text" value={inputValues[index] || ''} onChange={handleInputChange(index)} />
+                                <button type="submit">Close</button>
                             </div>
-                            <button type="submit">Close</button>
                         </form>
                     </div>
                 ))}

@@ -17,7 +17,6 @@ const NewHTLC = () => {
     const [symbol, setsymbol] = useState("");
     const [name, setname] = useState("");
     const [allowance, setAllowance] = useState("");
-    const [swaps, setSwaps] = useState([]);
 
     const swapERC20 = require("../contracts/SwapERC20A.sol/AtomicSwapERC20A.json");
     const contractERC20 = require("../contracts/Token.sol/TokenA.json");
@@ -54,15 +53,19 @@ const NewHTLC = () => {
         const receiver = receiverRef.current.value
         const amount = Number(amountRef.current.value)
         const timelock = Number(timelockRef.current.value)
-        const password = passwordRef.current.value
 
-        const passwordInBytes = ethers.utils.toUtf8Bytes(password)
+        const random = Math.floor(Math.random() * 10000000000000000000).toString()
+        const randomInBytes = ethers.utils.toUtf8Bytes(random)
+        const randomhash = ethers.utils.sha256(randomInBytes)
+        console.log('your password : ', randomhash)
+        alert('your password : '+ randomhash)
+        const passwordInBytes = ethers.utils.toUtf8Bytes(randomhash)
         const hash = ethers.utils.sha256(passwordInBytes)
 
 
         const filterOpen = contract_SWAP_ERC20.filters.Open()
         const logsOpen = await contract_SWAP_ERC20.queryFilter(filterOpen)
-        const lastId = logsOpen[logsOpen.length -1].args._swapID
+        const lastId = logsOpen[logsOpen.length - 1].args._swapID
         const newId = parseInt(String.fromCharCode(...lastId.substr(2).match(/.{2}/g).map(function (a) {
             return parseInt(a, 16);
         }))) + 1
@@ -89,20 +92,16 @@ const NewHTLC = () => {
             <div className="NewHTLC">
                 <form onSubmit={handleSubmit}>
                     <div>
-                        <label htmlFor="receiver">Receiver</label>
+                        <label htmlFor="receiver">Receiver : </label>
                         <input id="receiver" type="text" ref={receiverRef} />
                     </div>
                     <div>
-                        <label htmlFor="amount">Amount</label>
+                        <label htmlFor="amount">Amount : </label>
                         <input id="amount" type="number" ref={amountRef} />
                     </div>
                     <div>
-                        <label htmlFor="timelock">Timelock</label>
+                        <label htmlFor="timelock">Timelock : </label>
                         <input id="timelock" type="number" ref={timelockRef} />
-                    </div>
-                    <div>
-                        <label htmlFor="password">Password</label>
-                        <input id="password" type="text" ref={passwordRef} />
                     </div>
                     <button type="submit">Create</button>
                 </form>
@@ -119,10 +118,10 @@ const NewHTLC = () => {
                 </h2>
                 <form onSubmit={encreaseAllowance}>
                     <div>
-                        <label htmlFor="allowance">Amount</label>
+                        <label htmlFor="allowance">Amount : </label>
                         <input id="allowance" type="number" ref={allowanceRef} />
+                        <button type="submit">increase</button>
                     </div>
-                    <button type="submit">increase</button>
                 </form>
             </div>
         </div>
