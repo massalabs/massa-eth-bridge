@@ -1,6 +1,6 @@
 // The entry file of your WebAssembly module.
-import { Address, currentPeriod, generateEvent, Storage } from '@massalabs/massa-as-sdk';
-import { Args, bytesToString, Result, stringToBytes, unwrapStaticArray } from '@massalabs/as-types';
+import { Address, collections, currentPeriod, generateEvent, Storage } from '@massalabs/massa-as-sdk';
+import { Args, bytesToString, Result, stringToBytes, unwrapStaticArray, wrapStaticArray } from '@massalabs/as-types';
 import { JSON } from 'json-as/assembly';
 import { transactionCreator } from '@massalabs/massa-as-sdk/assembly/std/context';
 
@@ -44,63 +44,114 @@ export class SWAP {
     const secretLock = args.nextString().unwrap();
 
     return new Result(
-        {
-          state,
-          timelock,
-          erc20Value,
-          erc20Trader,
-          erc20ContractAddress,
-          withdrawTrader,
-          secretLock
-        } as SWAP,
-        null,
+      {
+        state,
+        timelock,
+        erc20Value,
+        erc20Trader,
+        erc20ContractAddress,
+        withdrawTrader,
+        secretLock
+      } as SWAP,
+      null,
     );
   }
 
-  serializeToString(): string {
+  public toJSONString(): string {
     return JSON.stringify<SWAP>(this);
   }
-  
-  serializeToBytes(): StaticArray<u8> {
-    return stringToBytes(JSON.stringify<SWAP>(this));
-  }
 
-  static parseFromString(data: string): SWAP {
-    return JSON.parse<SWAP>(data);
-  }
-
-  static parseFromBytes(data: StaticArray<u8>): SWAP {
-    return JSON.parse<SWAP>(bytesToString(data));
+  public static fromJSONString(data: string): SWAP {
+    const parsed = JSON.parse<SWAP>(data);
+    return parsed;
   }
 }
 
+@JSON
+export class OpenSwapRequest {
+  swapID!: string;
+  timelock!: u64;
+  erc20Value!: u64;
+  erc20ContractAddress!: string;
+  withdrawTrader!: string;
+  secretLock!: string;
+
+  public toArgs(): Args {
+    const args = new Args();
+    args.add(this.swapID);
+    args.add(this.timelock);
+    args.add(this.erc20Value);
+    args.add(this.erc20ContractAddress);
+    args.add(this.withdrawTrader);
+    args.add(this.secretLock);
+    return args;
+  }
+
+  public static fromArgs(data: StaticArray<u8>): Result<OpenSwapRequest> {
+    const args = new Args(data);
+    const swapID = args.nextString().unwrap();
+    const timelock = args.nextU64().unwrap();
+    const erc20Value = args.nextU64().unwrap();
+    const erc20ContractAddress = args.nextString().unwrap();
+    const withdrawTrader = args.nextString().unwrap();
+    const secretLock = args.nextString().unwrap();
+
+    return new Result(
+      {
+        swapID,
+        timelock,
+        erc20Value,
+        erc20ContractAddress,
+        withdrawTrader,
+        secretLock
+      } as OpenSwapRequest,
+      null,
+    );
+  }
+
+  public toJSONString(): string {
+    return JSON.stringify<OpenSwapRequest>(this);
+  }
+
+  public static fromJSONString(data: string): OpenSwapRequest {
+    const parsed = JSON.parse<OpenSwapRequest>(data);
+    return parsed;
+  }
+}
+// uploaded SWAP
+export const OPEN_SWAP_KEY = 'open_swap_key';
+export const openSwapMap = new collections.PersistentMap<string, Uint8Array>(
+  OPEN_SWAP_KEY,
+);
+
 export function open(args: StaticArray<u8>): StaticArray<u8> {
-  let args_deserialized = new Args(args);
+  // parse request data
+  const requestData = OpenSwapRequest.fromArgs(args);
 
-  let _swapID = args_deserialized.nextString().unwrap()
+  // safely unwrap the request data
+  const requestRawData = requestData.unwrap();
 
-  let _erc20Value = args_deserialized.nextU64().unwrap()
-  let _erc20ContractAddress = args_deserialized.nextString().unwrap()
-  let _withdrawTrader = args_deserialized.nextString().unwrap()
-  let _secretLock = args_deserialized.nextString().unwrap()
-  let _timelock = args_deserialized.nextU64().unwrap()
-
-  const lastSwap = Storage.get(_swapID)
-  if(lastSwap != ""){
+  // search for a swap with title in the swapID
+  const storedSwapFile: Uint8Array | null = openSwapMap.get(requestRawData.swapID);
+  const lastSwap = Storage.get(requestRawData.swapID)
+  if (lastSwap != "") {
     return stringToBytes('Swap already exists');
   }
-  const swap = new SWAP();
-  swap.state = 'OPEN'
-  swap.timelock = _timelock
-  swap.erc20Value = _erc20Value
-  swap.erc20Trader = transactionCreator().toByteString()
-  swap.erc20ContractAddress = _erc20ContractAddress
-  swap.withdrawTrader = _withdrawTrader
-  swap.secretLock = _secretLock
-  swap.secretKey = ''
-  const newSwap = swap.serializeToString()
 
-  Storage.set(_swapID, newSwap);
+  const swap = {
+    state: 'OPEN',
+    timelock: requestRawData.timelock,
+    erc20Value: requestRawData.erc20Value,
+    erc20Trader: transactionCreator().toByteString(),
+    erc20ContractAddress: requestRawData.erc20ContractAddress,
+    withdrawTrader: requestRawData.withdrawTrader,
+    secretLock: requestRawData.secretLock,
+    secretKey: "",
+  } as SWAP;
+
+  // set the file data in the storage
+  const serializedSwap = swap.toArgs().serialize();
+  openSwapMap.set(requestRawData.swapID, wrapStaticArray(serializedSwap));
   return stringToBytes('Swap open');
 }
 
@@ -112,10 +163,10 @@ export function close(args: StaticArray<u8>): StaticArray<u8> {
 
   let lastSwap = Storage.get(_swapID);
   const swap = SWAP.parseFromBytes(lastSwap);
-  if ( swap.state != 'OPEN'){
+  if (swap.state != 'OPEN') {
     return stringToBytes('Swap not open')
   }
-  if ( swap.secretLock != _secretKey) {
+  if (swap.secretLock != _secretKey) {
     return stringToBytes('Wrong secretkey for this swap')
   }
   swap.state = 'CLOSE'
@@ -124,7 +175,7 @@ export function close(args: StaticArray<u8>): StaticArray<u8> {
 
   lastSwap = swap.serializeToBytes()
   Storage.set(_swapID, lastSwap);
-  
+
   return stringToBytes('Swap closed')
 }
 
@@ -136,7 +187,7 @@ export function expire(args: StaticArray<u8>): StaticArray<u8> {
 
   let lastSwap = Storage.get(_swapID);
   const swap = SWAP.parseFromBytes(lastSwap);
-  if ( swap.state != 'OPEN'){
+  if (swap.state != 'OPEN') {
     return stringToBytes('Swap not open')
   }
   if (swap.timelock < currentPeriod()) {

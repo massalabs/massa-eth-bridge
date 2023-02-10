@@ -10,6 +10,15 @@ describe('Group test', () => {
 
 describe('Open test', () => {
   test('Create swap', () => {
-    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add('ox345266').add('ox345266').add('ox345266').add(40 as u64).serialize()))).toStrictEqual('Swap open');
+    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
+  });
+});
+
+describe('Open test', () => {
+  test('Create swap', () => {
+    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
+  });
+  test('Create swap', () => {
+    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
   });
 });
