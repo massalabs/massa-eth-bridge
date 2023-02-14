@@ -12,13 +12,15 @@ describe('Open test', () => {
   test('Create swap', () => {
     expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
   });
-});
-
-describe('Open test', () => {
-  test('Create swap', () => {
-    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
+  test('Create same swap', () => {
+    open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize())
+    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap already exists');
   });
-  test('Create swap', () => {
+  test('Close Swap', () => {
     expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
+    expect(bytesToString(close(new Args().add('ID1').add('ox345266').serialize()))).toStrictEqual('Swap closed');
+  });
+  test("Can't close swap", () => {
+    expect(bytesToString(close(new Args().add('ID1').add('ox345266').serialize()))).toStrictEqual('Swap not exists');
   });
 });
