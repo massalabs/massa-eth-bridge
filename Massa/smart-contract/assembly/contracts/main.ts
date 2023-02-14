@@ -1,5 +1,5 @@
 // The entry file of your WebAssembly module.
-import { Address, collections, currentPeriod, currentThread, generateEvent, Storage } from '@massalabs/massa-as-sdk';
+import { collections, currentPeriod, currentThread, generateEvent, Storage } from '@massalabs/massa-as-sdk';
 import { Args, bytesToString, Result, stringToBytes, unwrapStaticArray, wrapStaticArray } from '@massalabs/as-types';
 import { JSON } from 'json-as/assembly';
 import { transactionCreator } from '@massalabs/massa-as-sdk/assembly/std/context';
@@ -192,8 +192,8 @@ export class ExpireSwapRequest {
 
 
 // uploaded SWAP
-export const OPEN_SWAP_KEY = 'open_swap_key';
-export const SwapMap = new collections.PersistentMap<string, Uint8Array>(
+const OPEN_SWAP_KEY = 'open_swap_key';
+const SwapMap = new collections.PersistentMap<string, Uint8Array>(
   OPEN_SWAP_KEY,
 );
 
@@ -228,9 +228,9 @@ export function open(args: StaticArray<u8>): StaticArray<u8> {
   // verify set
   const NewSwap = SwapMap.get(requestRawData.swapID);
   if (NewSwap != null) {
-    return stringToBytes('Swap open');
+    return stringToBytes('Swap was successfully opened');
   }
-  return stringToBytes('Error');
+  return stringToBytes('Swap was not opened');
 }
 
 export function close(args: StaticArray<u8>): StaticArray<u8> {
@@ -274,7 +274,7 @@ export function expire(args: StaticArray<u8>): StaticArray<u8> {
   // safely unwrap the request data
   const requestRawData = requestData.unwrap();
 
-  // search for a swap with title in the swapID
+  // search for a swap with swapID
   const storedSwap: Uint8Array | null = SwapMap.get(requestRawData.swapID);
   if (storedSwap == null) {
     return stringToBytes('Swap not exists');
