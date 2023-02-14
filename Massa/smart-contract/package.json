@@ -41,8 +41,5 @@
     "prettier": "@massalabs/prettier-config-as",
     "engines": {
         "node": ">=16"
-    },
-    "dependencies": {
-        "json-as": "^0.5.21"
     }
 }
