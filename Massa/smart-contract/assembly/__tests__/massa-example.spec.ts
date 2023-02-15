@@ -1,6 +1,7 @@
-import { Args, NoArg, bytesToString, stringToBytes } from '@massalabs/as-types';
+import { Args, bytesToString, stringToBytes } from '@massalabs/as-types';
 import { event } from '../contracts/main';
-import { SWAP, open, close, expire } from '../contracts/main';
+import { open, close } from '../contracts/main';
+import { Storage } from '@massalabs/massa-as-sdk';
 
 describe('Group test', () => {
   test('Testing event', () => {
@@ -10,17 +11,70 @@ describe('Group test', () => {
 
 describe('Open test', () => {
   test('Create swap', () => {
-    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
+    expect(
+      bytesToString(
+        open(
+          new Args()
+            .add('ID1')
+            .add(10 as u64)
+            .add(40 as u64)
+            .add('ox345266')
+            .add('ox345266')
+            .add('ox345266')
+            .serialize(),
+        ),
+      ),
+    ).toStrictEqual('Swap was successfully opened');
+    expect(Storage.get(stringToBytes('ID1'))).not.toBeNull();
   });
   test('Create same swap', () => {
-    open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize())
-    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap already exists');
+    open(
+      new Args()
+        .add('ID2')
+        .add(10 as u64)
+        .add(40 as u64)
+        .add('ox345266')
+        .add('ox345266')
+        .add('ox345266')
+        .serialize(),
+    );
+    expect(
+      bytesToString(
+        open(
+          new Args()
+            .add('ID2')
+            .add(10 as u64)
+            .add(40 as u64)
+            .add('ox345266')
+            .add('ox345266')
+            .add('ox345266')
+            .serialize(),
+        ),
+      ),
+    ).toStrictEqual('Swap already exists');
   });
   test('Close Swap', () => {
-    expect(bytesToString(open(new Args().add('ID1').add(10 as u64).add(40 as u64).add('ox345266').add('ox345266').add('ox345266').serialize()))).toStrictEqual('Swap open');
-    expect(bytesToString(close(new Args().add('ID1').add('ox345266').serialize()))).toStrictEqual('Swap closed');
+    expect(
+      bytesToString(
+        open(
+          new Args()
+            .add('ID3')
+            .add(10 as u64)
+            .add(40 as u64)
+            .add('ox345266')
+            .add('ox345266')
+            .add('ox345266')
+            .serialize(),
+        ),
+      ),
+    ).toStrictEqual('Swap was successfully opened');
+    expect(
+      bytesToString(close(new Args().add('ID3').add('ox345266').serialize())),
+    ).toStrictEqual('Swap closed');
   });
   test("Can't close swap", () => {
-    expect(bytesToString(close(new Args().add('ID1').add('ox345266').serialize()))).toStrictEqual('Swap not exists');
+    expect(
+      bytesToString(close(new Args().add('ID3').add('ox345266').serialize())),
+    ).toStrictEqual('Swap not open');
   });
 });
