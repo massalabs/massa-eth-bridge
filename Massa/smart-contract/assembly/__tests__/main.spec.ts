@@ -1,5 +1,5 @@
 import { Args, bytesToString, stringToBytes } from '@massalabs/as-types';
-import { event, expire } from '../contracts/main';
+import { event, expire, SWAP, swap } from '../contracts/main';
 import { open, close } from '../contracts/main';
 import { Storage } from '@massalabs/massa-as-sdk';
 
@@ -20,7 +20,6 @@ describe('Open swap test', () => {
             .add(40 as u64)
             .add('ox345266')
             .add('ox345266')
-            .add('ox345266')
             .serialize(),
         ),
       ),
@@ -35,7 +34,6 @@ describe('Open swap test', () => {
         .add(40 as u64)
         .add('ox345266')
         .add('ox345266')
-        .add('ox345266')
         .serialize(),
     );
     expect(
@@ -45,7 +43,6 @@ describe('Open swap test', () => {
             .add('ID2')
             .add(10 as u64)
             .add(40 as u64)
-            .add('ox345266')
             .add('ox345266')
             .add('ox345266')
             .serialize(),
@@ -64,7 +61,6 @@ describe('Close swap test', () => {
             .add('ID3')
             .add(10 as u64)
             .add(40 as u64)
-            .add('ox345266')
             .add('ox345266')
             .add('secretKey')
             .serialize(),
@@ -89,7 +85,6 @@ describe('Close swap test', () => {
             .add(10 as u64)
             .add(40 as u64)
             .add('ox345266')
-            .add('ox345266')
             .add('secretKey')
             .serialize(),
         ),
@@ -98,5 +93,50 @@ describe('Close swap test', () => {
     expect(
       bytesToString(close(new Args().add('ID4').add('différentekey').serialize())),
     ).toStrictEqual('Wrong secretkey for this swap');
+  });
+});
+
+const SWAP1ID = 'ID5';
+const SWAP1state = 'OPEN';
+const SWAP1timeLock = 0;
+const SWAP1secretLock = 'ox345266';
+const SWAP1secretKey = '';
+
+describe('Status swap test', () => {
+  test('Status Swap', () => {
+    expect(
+      bytesToString(
+        open(
+          new Args()
+            .add(SWAP1ID)
+            .add(SWAP1timeLock as u64)
+            .add(40 as u64)
+            .add('ox345266')
+            .add(SWAP1secretLock)
+            .serialize(),
+        ),
+      ),
+    ).toStrictEqual('Swap was successfully opened');
+    expect(
+      bytesToString(swap(new Args().add('ID5').serialize())),
+    ).toStrictEqual(`${SWAP1state}, ${SWAP1timeLock}, ${SWAP1secretLock}, ${SWAP1secretKey}`);
+  });
+  test('Status Swap was not created', () => {
+    expect(
+      bytesToString(
+        open(
+          new Args()
+            .add('ID6')
+            .add(10 as u64)
+            .add(40 as u64)
+            .add('ox345266')
+            .add('secretKey')
+            .serialize(),
+        ),
+      ),
+    ).toStrictEqual('Swap was successfully opened');
+    expect(
+      bytesToString(swap(new Args().add('ID7').serialize())),
+    ).toStrictEqual('Swap not exists');
   });
 });
