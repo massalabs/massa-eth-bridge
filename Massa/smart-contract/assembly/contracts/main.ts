@@ -1,7 +1,7 @@
 // The entry file of your WebAssembly module.
-import { Storage, currentThread, generateEvent } from '@massalabs/massa-as-sdk';
+import { Storage, currentThread, generateEvent, Context, Address, transferCoins } from '@massalabs/massa-as-sdk';
 import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
-import { transactionCreator } from '@massalabs/massa-as-sdk/assembly/std/context';
+import { transactionCreator, transferedCoins } from '@massalabs/massa-as-sdk/assembly/std/context';
 
 export function event(_: StaticArray<u8>): StaticArray<u8> {
   const message = "I'm an event!";
@@ -19,7 +19,7 @@ export class SWAP implements Serializable {
     public withdrawTrader: string = '',
     public secretLock: string = '',
     public secretKey: string = '',
-  ) {}
+  ) { }
 
   public serialize(): StaticArray<u8> {
     const args = new Args();
@@ -61,7 +61,7 @@ export class OpenSwapRequest implements Serializable {
     public massaValue: u64 = 0,
     public withdrawTrader: string = '',
     public secretLock: string = '',
-  ) {}
+  ) { }
 
   public serialize(): StaticArray<u8> {
     const args = new Args();
@@ -97,7 +97,7 @@ export class OpenSwapRequest implements Serializable {
 
 // define class CloseSwapRequest to work with close function
 export class CloseSwapRequest implements Serializable {
-  constructor(public swapID: string = '', public secretKey: string = '') {}
+  constructor(public swapID: string = '', public secretKey: string = '') { }
 
   public serialize(): StaticArray<u8> {
     const args = new Args();
@@ -121,7 +121,7 @@ export class CloseSwapRequest implements Serializable {
 
 // define class ExpireSwapRequest to work with expire function
 export class ExpireSwapRequest implements Serializable {
-  constructor(public swapID: string = '') {}
+  constructor(public swapID: string = '') { }
 
   public serialize(): StaticArray<u8> {
     const args = new Args();
@@ -141,7 +141,7 @@ export class ExpireSwapRequest implements Serializable {
 
 // define class SwapRequest to work with expire function
 export class SwapRequest implements Serializable {
-  constructor(public swapID: string = '') {}
+  constructor(public swapID: string = '') { }
 
   public serialize(): StaticArray<u8> {
     const args = new Args();
@@ -173,6 +173,11 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // ... if found, return (Swap already exists)
   if (storedSwap) {
     return stringToBytes('Swap already exists');
+  }
+
+  let coinCallerSend = transferedCoins()
+  if (coinCallerSend != requestData.massaValue) {
+    return stringToBytes('Coins send by Caller no corresponding with massaValue');
   }
 
   //initiating swap with data given by caller
@@ -221,6 +226,11 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   if (NewSwap.secretLock != requestData.secretKey) {
     return stringToBytes('Wrong secretkey for this swap');
   }
+
+  const target = new Address();
+  target._value = NewSwap.withdrawTrader;
+  transferCoins(target, NewSwap.massaValue);
+
   // changing Swap states
   NewSwap.state = 'CLOSE';
   NewSwap.secretKey = requestData.secretKey;
@@ -250,15 +260,20 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // initiating swap with data find
   const NewSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
 
-    // ... if Swap not open, return (Swap not open)
+  // ... if Swap not open, return (Swap not open)
   if (NewSwap.state != 'OPEN') {
     return stringToBytes('Swap not open');
   }
-    // ... if timeLock are  not expired, return (Wrong timeLock for this swap)
+  // ... if timeLock are  not expired, return (Wrong timeLock for this swap)
   if (NewSwap.timeLock < currentThread()) {
     return stringToBytes('Wrong timeLock for this swap');
   }
-    // changing Swap states
+
+  const target = new Address();
+  target._value = NewSwap.trader;
+  transferCoins(target, NewSwap.massaValue);
+
+  // changing Swap states
   NewSwap.state = 'EXPIRED';
 
   // set the file data in the storage
