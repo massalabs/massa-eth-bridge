@@ -165,7 +165,7 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // safely unwrap the request data
   const requestData = args
-    .nextSerializable<OpenSwapRequest>()
+    .nextSerializable<OpenSwapRequest>(new OpenSwapRequest)
     .expect("Can't deserialize OpenSwapRequest in open function");
 
   // search for a swap with swapID
@@ -202,7 +202,7 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // safely unwrap the request data
   const requestData = args
-    .nextSerializable<CloseSwapRequest>()
+    .nextSerializable<CloseSwapRequest>(new CloseSwapRequest)
     .expect(
       "Can't deserialize CloseSwapRequest in close function",
     );
@@ -216,7 +216,7 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // finding Swap with swapID
   const storedSwap = Storage.get(stringToBytes(requestData.swapID));
   // initiating swap with data find
-  const NewSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
+  const NewSwap = new Args(storedSwap).nextSerializable<SWAP>(new SWAP).unwrap();
 
   // ... if Swap not open, return (Swap not open)
   if (NewSwap.state != 'OPEN') {
@@ -246,7 +246,7 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // safely unwrap the request data
   const requestData = args
-    .nextSerializable<ExpireSwapRequest>()
+    .nextSerializable<ExpireSwapRequest>(new ExpireSwapRequest)
     .expect("Can't deserialize ExpireSwapRequest from giben argument");
 
   // search for a swap with swapID
@@ -258,7 +258,7 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // finding Swap with swapID
   const storedSwap = Storage.get(stringToBytes(requestData.swapID));
   // initiating swap with data find
-  const NewSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
+  const NewSwap = new Args(storedSwap).nextSerializable<SWAP>(new SWAP).unwrap();
 
   // ... if Swap not open, return (Swap not open)
   if (NewSwap.state != 'OPEN') {
@@ -287,7 +287,7 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // safely unwrap the request data
   const requestData = args
-    .nextSerializable<SwapRequest>()
+    .nextSerializable<SwapRequest>(new SwapRequest)
     .expect("Can't deserialize ExpireSwapRequest from giben argument");
 
   // search for a swap with swapID
@@ -299,7 +299,7 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // finding Swap with swapID
   const storedSwap = Storage.get(stringToBytes(requestData.swapID));
   // initiating swap with data find
-  const CurrentSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
+  const CurrentSwap = new Args(storedSwap).nextSerializable<SWAP>(new SWAP).unwrap();
 
   // return all infoirmations about Swap
   return stringToBytes(`${CurrentSwap.state.toString()}, ${CurrentSwap.timeLock.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
