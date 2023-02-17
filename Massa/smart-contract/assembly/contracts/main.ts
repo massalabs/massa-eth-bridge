@@ -1,5 +1,5 @@
 // The entry file of your WebAssembly module.
-import { Storage, currentThread, generateEvent, Context, Address, transferCoins } from '@massalabs/massa-as-sdk';
+import { Storage, currentThread, generateEvent, Address, transferCoins } from '@massalabs/massa-as-sdk';
 import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
 import { transactionCreator, transferedCoins } from '@massalabs/massa-as-sdk/assembly/std/context';
 
@@ -161,7 +161,7 @@ export class SwapRequest implements Serializable {
 
 // opening SWAP with severale informations
 export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-  const args = new Args(binaryArgs);
+  const args = new Args(binaryArgs)
 
   // safely unwrap the request data
   const requestData = args
