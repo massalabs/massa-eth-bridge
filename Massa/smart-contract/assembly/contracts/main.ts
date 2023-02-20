@@ -175,10 +175,10 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     return stringToBytes('Swap already exists');
   }
 
-  let coinCallerSend = transferedCoins()
-  if (coinCallerSend != requestData.massaValue) {
-    return stringToBytes('Coins send by Caller no corresponding with massaValue');
-  }
+  //let coinCallerSend = transferedCoins()
+  //if (coinCallerSend != requestData.massaValue) {
+  //  return stringToBytes('Coins send by Caller no corresponding with massaValue');
+  //}
 
   //initiating swap with data given by caller
   let swap = new SWAP(
@@ -227,9 +227,9 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     return stringToBytes('Wrong secretkey for this swap');
   }
 
-  const target = new Address();
-  target._value = NewSwap.withdrawTrader;
-  transferCoins(target, NewSwap.massaValue);
+  //const target = new Address();
+  //target._value = NewSwap.withdrawTrader;
+  //transferCoins(target, NewSwap.massaValue);
 
   // changing Swap states
   NewSwap.state = 'CLOSE';
@@ -269,9 +269,9 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     return stringToBytes('Wrong timeLock for this swap');
   }
 
-  const target = new Address();
-  target._value = NewSwap.trader;
-  transferCoins(target, NewSwap.massaValue);
+  //const target = new Address();
+  //target._value = NewSwap.trader;
+  //transferCoins(target, NewSwap.massaValue);
 
   // changing Swap states
   NewSwap.state = 'EXPIRED';

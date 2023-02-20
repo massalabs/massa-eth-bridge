@@ -12,7 +12,7 @@ import {
 import React from 'react';
 import { useEffect, useState } from 'react';
 
-const sc_addr = "A12hVH1UU5NxfnhURTTcTNmZ9cJ2qUvGeSRn1XqF4BoWVJzokbDz"
+const sc_addr = "A125H3UFANWKVfKuZ5KiUwFFk9pe4HcNvBZJLbdsnp2JffvLcuBy"
 const JSON_RPC_URL_PUBLIC = import.meta.env.VITE_JSON_RPC_URL_PUBLIC;
 const WALLET_PRIVATE_KEY = import.meta.env.VITE_WALLET_PRIVATE_KEY;
 const WALLET_PUBLIC_KEY = import.meta.env.VITE_WALLET_PUBLIC_KEY;
@@ -43,7 +43,7 @@ function Content() {
 
 
       // get the balance of the wallet
-      const balance: IBalance | null = await client.wallet().getAccountBalance("A12SV8zastb7NtF2jCkHrRknF4via59FgPr1PGNTp8AQ6qCUgKMs");
+      const balance: IBalance | null = await client.wallet().getAccountBalance(WALLET_ADDRESS);
       setWeb3client(client);
       setBalance(balance!.final.toValue())
     }
@@ -129,6 +129,10 @@ function Content() {
     secretKey: ""
   })
 
+  const [infoState, setinfoState] = React.useState({
+    swapID: ""
+  })
+
   function handleChangeOpen(evt: { target: { value: string | number; name: any; }; }) {
     const value = evt.target.value;
     setopenState({
@@ -145,11 +149,23 @@ function Content() {
     });
   }
 
+  function handleChangeInfo(evt: { target: { value: string | number; name: any; }; }) {
+    const value = evt.target.value;
+    setinfoState({
+      ...infoState,
+      [evt.target.name]: value
+    });
+  }
+
   async function handleSubmitOpen() {
     funcOpen(openState.swapID, openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
   }
   async function handleSubmitClose() {
     funcClose(closeState.swapID, closeState.secretKey)
+  }
+  async function handleSubmitInfo() {
+    const result = await funcSwap(closeState.swapID)
+    alert(result)
   }
 
   return (
@@ -195,6 +211,15 @@ function Content() {
               <input type="text" name="secretKey" value={closeState.secretKey} onChange={handleChangeClose} />
             </div>
             <button type="submit">Close</button>
+          </form>
+        </div>
+        <div>
+        <form  onSubmit={handleSubmitInfo}>
+            <div>
+              <label htmlFor="swapID">swapID : </label>
+              <input type="text" name="swapID" value={infoState.swapID} onChange={handleChangeInfo} />
+            </div>
+            <button type="submit">Get</button>
           </form>
         </div>
       </div>
