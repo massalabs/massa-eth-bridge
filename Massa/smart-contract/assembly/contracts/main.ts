@@ -172,6 +172,7 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const storedSwap = Storage.has(requestData.swapID);
   // ... if found, return (Swap already exists)
   if (storedSwap) {
+    generateEvent('Swap already exists');
     return stringToBytes('Swap already exists');
   }
 
@@ -193,6 +194,7 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // set the file data in the storage
   let serializedSwap = swap.serialize();
   Storage.set(stringToBytes(requestData.swapID), serializedSwap);
+  generateEvent('Swap was successfully opened');
   return stringToBytes('Swap was successfully opened');
 }
 
@@ -210,6 +212,7 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // search for a swap with swapID
   const swapExists = Storage.has(requestData.swapID);
   if (!swapExists) {
+    generateEvent('Swap not exists');
     return stringToBytes('Swap not exists');
   }
 
@@ -220,11 +223,13 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // ... if Swap not open, return (Swap not open)
   if (NewSwap.state != 'OPEN') {
+    generateEvent('Swap not open');
     return stringToBytes('Swap not open');
   }
   // ... if caller give wrong secretKey, return (Wrong secretkey for this swap)
   if (NewSwap.secretLock != requestData.secretKey) {
-    return stringToBytes('Wrong secretkey for this swap');
+    generateEvent('Swap closed');
+    return stringToBytes('Swap closed');
   }
 
   //const target = new Address();
@@ -238,6 +243,7 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // set the file data in the storage
   const serializedNewSwap = NewSwap.serialize();
   Storage.set(stringToBytes(requestData.swapID), serializedNewSwap);
+  generateEvent('Swap closed');
   return stringToBytes('Swap closed');
 }
 
@@ -252,6 +258,7 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // search for a swap with swapID
   const swapExists = Storage.has(requestData.swapID);
   if (swapExists == null) {
+    generateEvent('Swap not exists');
     return stringToBytes('Swap not exists');
   }
 
@@ -262,10 +269,12 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // ... if Swap not open, return (Swap not open)
   if (NewSwap.state != 'OPEN') {
+    generateEvent('Swap not open');
     return stringToBytes('Swap not open');
   }
   // ... if timeLock are  not expired, return (Wrong timeLock for this swap)
   if (NewSwap.timeLock < currentThread()) {
+    generateEvent('Wrong timeLock for this swap');
     return stringToBytes('Wrong timeLock for this swap');
   }
 
@@ -279,6 +288,7 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // set the file data in the storage
   const serializedNewSwap = NewSwap.serialize();
   Storage.set(stringToBytes(requestData.swapID), serializedNewSwap);
+  generateEvent('Swap expired');
   return stringToBytes('Swap expired');
 }
 
@@ -293,6 +303,7 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // search for a swap with swapID
   const swapExists = Storage.has(requestData.swapID);
   if (!swapExists) {
+    generateEvent('Swap not exists');
     return stringToBytes('Swap not exists');
   }
 
@@ -302,5 +313,6 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const CurrentSwap = new Args(storedSwap).nextSerializable<SWAP>(new SWAP).unwrap();
 
   // return all infoirmations about Swap
+  generateEvent(`${CurrentSwap.state.toString()}, ${CurrentSwap.timeLock.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
   return stringToBytes(`${CurrentSwap.state.toString()}, ${CurrentSwap.timeLock.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
 }

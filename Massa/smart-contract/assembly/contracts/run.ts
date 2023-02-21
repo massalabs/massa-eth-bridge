@@ -1,5 +1,5 @@
 import { Address, call, callerHasWriteAccess } from '@massalabs/massa-as-sdk';
-import { NoArg } from '@massalabs/as-types';
+import { Args, NoArg } from '@massalabs/as-types';
 
 /**
  * This function is meant to be called only one time: when the contract is deployed.
@@ -22,8 +22,10 @@ export function constructor(_: StaticArray<u8>): StaticArray<u8> {
  */
 export function main(_: StaticArray<u8>): StaticArray<u8> {
   const address = new Address(
-    'A1AVtNgMMEJMBpUniiHC9vfSHjVib3PUfKn6s4ps8NyakPxwWYj',
+    'A123DomKuDckrAtefuu7qoyjJA9DjFUxniWqdxD4JmmgGg3zjks8',
   );
   call(address, 'event', NoArg, 0);
+  call(address, 'open', new Args().add('swap1').add(1 as u64).add(3 as u64).add('withdraw').add('secret'), 100000000)
+  call(address, 'swap', new Args().add('swap1'), 0)
   return [];
 }

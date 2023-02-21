@@ -2,17 +2,17 @@ import {
   Args,
   Client,
   ClientFactory,
-  DefaultProviderUrls,
+  EOperationStatus,
   IAccount,
   IBalance,
+  ICallData,
   IProvider,
   ProviderType,
-  WalletClient,
 } from '@massalabs/massa-web3';
 import React from 'react';
 import { useEffect, useState } from 'react';
 
-const sc_addr = "A125H3UFANWKVfKuZ5KiUwFFk9pe4HcNvBZJLbdsnp2JffvLcuBy"
+const sc_addr = "A123DomKuDckrAtefuu7qoyjJA9DjFUxniWqdxD4JmmgGg3zjks8"
 const JSON_RPC_URL_PUBLIC = import.meta.env.VITE_JSON_RPC_URL_PUBLIC;
 const WALLET_PRIVATE_KEY = import.meta.env.VITE_WALLET_PRIVATE_KEY;
 const WALLET_PUBLIC_KEY = import.meta.env.VITE_WALLET_PUBLIC_KEY;
@@ -21,7 +21,8 @@ const WALLET_ADDRESS = import.meta.env.VITE_WALLET_ADDRESS;
 function Content() {
   const [web3client, setWeb3client] = useState<Client | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
-  
+  const [base_account, setAccount] = useState<IAccount | null>(null);
+
   useEffect(() => {
     const initClient = async () => {
       const base_account = {
@@ -29,6 +30,7 @@ function Content() {
         secretKey: WALLET_PRIVATE_KEY,
         address: WALLET_ADDRESS,
       } as IAccount;
+      setAccount(base_account)
 
       const client = await ClientFactory.createCustomClient(
         [
@@ -51,6 +53,37 @@ function Content() {
     initClient().catch(console.error);
   }, []);
 
+  async function DisplayEvent(opIds: string) {
+
+    // Wait the end of deployment
+    if (web3client) {
+      await web3client.smartContracts().awaitRequiredOperationStatus(opIds, EOperationStatus.FINAL);
+
+      const event = await web3client.smartContracts().getFilteredScOutputEvents({
+        emitter_address: null,
+        start: null,
+        end: null,
+        original_caller_address: null,
+        original_operation_id: opIds,
+        is_final: null,
+      });
+
+      if (event.length) {
+        let result
+        // This prints the deployed SC address
+        event.forEach((e) => {
+          result = e.data
+          console.log(e.data);
+        });
+        return result
+      }
+      else {
+        console.log('Call done. No events has been generated');
+        return ('Call done. No events has been generated')
+      }
+    }
+  }
+
   async function funcOpen(swapID: string, timeLock: number, massaValue: number, withdrawTrader: string, secretLock: string) {
     let args = new Args();
     args.addString(swapID);
@@ -58,32 +91,40 @@ function Content() {
     args.addU64(BigInt(massaValue))
     args.addString(withdrawTrader);
     args.addString(secretLock);
-    if (web3client) {
-      await web3client.smartContracts().callSmartContract({
+    if (web3client && base_account) {
+      const tx = await web3client.smartContracts().callSmartContract({
         fee: 0,
-        maxGas: 1000000,
+        maxGas: 1000000000,
         coins: 0.1,
         targetAddress: sc_addr,
         functionName: "open",
         parameter: args.serialize()
-      });
+      } as ICallData,
+        base_account
+      );
+      return (tx.toString())
     }
+    return ('nothing')
   }
 
   async function funcClose(swapID: string, secretKey: string) {
     let args = new Args();
     args.addString(swapID);
     args.addString(secretKey);
-    if (web3client) {
-      await web3client.smartContracts().callSmartContract({
+    if (web3client && base_account) {
+      const tx = await web3client.smartContracts().callSmartContract({
         fee: 0,
-        maxGas: 1000000,
+        maxGas: 1000000000,
         coins: 0.1,
         targetAddress: sc_addr,
         functionName: "close",
         parameter: args.serialize()
-      });
+      } as ICallData,
+        base_account
+      );
+      return (tx.toString())
     }
+    return ('nothing')
   }
 
   async function funcExpire(swapID: string) {
@@ -104,16 +145,20 @@ function Content() {
   async function funcSwap(swapID: string) {
     let args = new Args();
     args.addString(swapID);
-    if (web3client) {
-      await web3client.smartContracts().callSmartContract({
+    if (web3client && base_account) {
+      const result = await web3client.smartContracts().callSmartContract({
         fee: 0,
         maxGas: 1000000,
         coins: 0.1,
         targetAddress: sc_addr,
         functionName: "swap",
         parameter: args.serialize()
-      });
+      } as ICallData,
+        base_account
+      );
+      return (result.toString())
     }
+    return ('nothing')
   }
 
   const [openState, setopenState] = React.useState({
@@ -129,43 +174,44 @@ function Content() {
     secretKey: ""
   })
 
-  const [infoState, setinfoState] = React.useState({
-    swapID: ""
-  })
+  const [swapID, setswapID] = useState('');
+  const [swapIDInfo, setswapIDInfo] = useState('');
+  const [openInfo, setopenInfo] = useState('');
+  const [closeInfo, setcloseInfo] = useState('');
 
-  function handleChangeOpen(evt: { target: { value: string | number; name: any; }; }) {
-    const value = evt.target.value;
+  const handleChangeOpen = (event: { target: { value: string | number; name: any; }; }) => {
     setopenState({
       ...openState,
-      [evt.target.name]: value
+      [event.target.name]: event.target.value
     });
   }
-
-  function handleChangeClose(evt: { target: { value: string | number; name: any; }; }) {
-    const value = evt.target.value;
+  const handleChangeClose = (event: { target: { value: string | number; name: any; }; }) => {
     setcloseState({
       ...closeState,
-      [evt.target.name]: value
+      [event.target.name]: event.target.value
     });
   }
-
-  function handleChangeInfo(evt: { target: { value: string | number; name: any; }; }) {
-    const value = evt.target.value;
-    setinfoState({
-      ...infoState,
-      [evt.target.name]: value
-    });
+  const handleChangeSwap = (event: { target: { value: React.SetStateAction<string>; }; }) => {
+    setswapID(event.target.value)
   }
 
   async function handleSubmitOpen() {
-    funcOpen(openState.swapID, openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
+    const result = await funcOpen(openState.swapID, openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
+    const display = await DisplayEvent(result)
+    setopenInfo(display)
+    console.log(display)
   }
   async function handleSubmitClose() {
-    funcClose(closeState.swapID, closeState.secretKey)
+    const result = await funcClose(closeState.swapID, closeState.secretKey)
+    const display = await DisplayEvent(result)
+    setcloseInfo(display)
+    console.log(display)
   }
-  async function handleSubmitInfo() {
-    const result = await funcSwap(closeState.swapID)
-    alert(result)
+  async function handleSubmitSwap() {
+    const result = await funcSwap(swapID)
+    const display = await DisplayEvent(result)
+    setswapIDInfo(display)
+    console.log(display)
   }
 
   return (
@@ -175,52 +221,36 @@ function Content() {
         <div>
           <p>your balance : {balance}</p>
         </div>
+        <h2>Open Swap : </h2>
         <div>
-          <form  onSubmit={handleSubmitOpen}>
-            <div>
-              <label htmlFor="swapID">swapID : </label>
-              <input type="text" name="swapID" value={openState.swapID} onChange={handleChangeOpen} />
-            </div>
-            <div>
-              <label htmlFor="timeLock">timeLock : </label>
-              <input type="number" name="timeLock" value={openState.timeLock} onChange={handleChangeOpen} />
-            </div>
-            <div>
-              <label htmlFor="massaValue">massaValue : </label>
-              <input type="number" name="massaValue" value={openState.massaValue} onChange={handleChangeOpen} />
-            </div>
-            <div>
-              <label htmlFor="withdrawTrader">withdrawTrader : </label>
-              <input type="text" name="withdrawTrader" value={openState.withdrawTrader} onChange={handleChangeOpen} />
-            </div>
-            <div>
-              <label htmlFor="secretLock">secretLock : </label>
-              <input type="text" name="secretLock" value={openState.secretLock} onChange={handleChangeOpen} />
-            </div>
-            <button type="submit">Create</button>
-          </form>
+          <label htmlFor="swapID">swapID : </label>
+          <input type="text" name="swapID" value={openState.swapID} onChange={handleChangeOpen} />
+          <label htmlFor="timeLock">timeLock : </label>
+          <input type="number" name="timeLock" value={openState.timeLock} onChange={handleChangeOpen} />
+          <label htmlFor="massaValue">massaValue : </label>
+          <input type="number" name="massaValue" value={openState.massaValue} onChange={handleChangeOpen} />
+          <label htmlFor="withdrawTrader">withdrawTrader : </label>
+          <input type="text" name="withdrawTrader" value={openState.withdrawTrader} onChange={handleChangeOpen} />
+          <label htmlFor="secretLock">secretLock : </label>
+          <input type="text" name="secretLock" value={openState.secretLock} onChange={handleChangeOpen} />
+          <button onClick={handleSubmitOpen}>create</button>
+          <p>Result : {openInfo}</p>
         </div>
+        <h2>Close Swap : </h2>
         <div>
-          <form  onSubmit={handleSubmitClose}>
-            <div>
-              <label htmlFor="swapID">swapID : </label>
-              <input type="text" name="swapID" value={closeState.swapID} onChange={handleChangeClose} />
-            </div>
-            <div>
-              <label htmlFor="secretKey">secretKey : </label>
-              <input type="text" name="secretKey" value={closeState.secretKey} onChange={handleChangeClose} />
-            </div>
-            <button type="submit">Close</button>
-          </form>
+          <label htmlFor="swapID">swapID : </label>
+          <input type="text" name="swapID" value={closeState.swapID} onChange={handleChangeClose} />
+          <label htmlFor="secretKey">secretKey : </label>
+          <input type="text" name="secretKey" value={closeState.secretKey} onChange={handleChangeClose} />
+          <button onClick={handleSubmitClose}>create</button>
+          <p>Result : {closeInfo}</p>
         </div>
+        <h2>Get Swap : </h2>
         <div>
-        <form  onSubmit={handleSubmitInfo}>
-            <div>
-              <label htmlFor="swapID">swapID : </label>
-              <input type="text" name="swapID" value={infoState.swapID} onChange={handleChangeInfo} />
-            </div>
-            <button type="submit">Get</button>
-          </form>
+          <label htmlFor="swapID">swapID : </label>
+          <input type="text" id="swap" name="swap" onChange={handleChangeSwap} value={swapID} />
+          <button onClick={handleSubmitSwap}>click</button>
+          <p>Result : {swapIDInfo}</p>
         </div>
       </div>
     </>
