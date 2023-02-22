@@ -1,7 +1,7 @@
 // The entry file of your WebAssembly module.
-import { Storage, currentThread, generateEvent, Address, transferCoins } from '@massalabs/massa-as-sdk';
+import { Storage, generateEvent, Address, transferCoins } from '@massalabs/massa-as-sdk';
 import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
-import { transactionCreator, transferedCoins } from '@massalabs/massa-as-sdk/assembly/std/context';
+import { timestamp, transactionCreator, transferedCoins } from '@massalabs/massa-as-sdk/assembly/std/context';
 
 export function event(_: StaticArray<u8>): StaticArray<u8> {
   const message = "I'm an event!";
@@ -184,7 +184,7 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   //initiating swap with data given by caller
   let swap = new SWAP(
     'OPEN',
-    requestData.timeLock,
+    timestamp() + requestData.timeLock,
     requestData.massaValue,
     transactionCreator().toString(),
     requestData.withdrawTrader,
@@ -228,8 +228,8 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   }
   // ... if caller give wrong secretKey, return (Wrong secretkey for this swap)
   if (NewSwap.secretLock != requestData.secretKey) {
-    generateEvent('Swap closed');
-    return stringToBytes('Swap closed');
+    generateEvent('Wrong secretkey for this swap');
+    return stringToBytes('Wrong secretkey for this swap');
   }
 
   //const target = new Address();
@@ -257,7 +257,7 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // search for a swap with swapID
   const swapExists = Storage.has(requestData.swapID);
-  if (swapExists == null) {
+  if (!swapExists) {
     generateEvent('Swap not exists');
     return stringToBytes('Swap not exists');
   }
@@ -273,7 +273,7 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     return stringToBytes('Swap not open');
   }
   // ... if timeLock are  not expired, return (Wrong timeLock for this swap)
-  if (NewSwap.timeLock < currentThread()) {
+  if (NewSwap.timeLock > timestamp()) {
     generateEvent('Wrong timeLock for this swap');
     return stringToBytes('Wrong timeLock for this swap');
   }
@@ -313,6 +313,6 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   const CurrentSwap = new Args(storedSwap).nextSerializable<SWAP>(new SWAP).unwrap();
 
   // return all infoirmations about Swap
-  generateEvent(`${CurrentSwap.state.toString()}, ${CurrentSwap.timeLock.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
-  return stringToBytes(`${CurrentSwap.state.toString()}, ${CurrentSwap.timeLock.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
+  generateEvent(`${CurrentSwap.state.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
+  return stringToBytes(`${CurrentSwap.state.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
 }

@@ -6,8 +6,10 @@ import {
   IAccount,
   IBalance,
   ICallData,
+  IDatastoreEntry,
   IProvider,
   ProviderType,
+  IDatastoreEntryInput
 } from '@massalabs/massa-web3';
 import React from 'react';
 import { useEffect, useState } from 'react';
@@ -161,6 +163,25 @@ function Content() {
     return ('nothing')
   }
 
+  async function funcGetSwapinfo(swapID: string) {
+    let args = new Args();
+    args.addString(swapID);
+    if (web3client && base_account) {
+      const datastoreEntries: Array<IDatastoreEntry> = await web3client
+        .publicApi()
+        .getDatastoreEntries([
+          {
+            address: sc_addr,
+            key: [0],
+            //key: "swap1"
+          } as IDatastoreEntryInput,
+        ]);
+      console.log(datastoreEntries[0])
+      return(datastoreEntries)
+    }
+    return ('nothing')
+  }
+  
   const [openState, setopenState] = React.useState({
     swapID: "",
     timeLock: 0,
@@ -213,6 +234,10 @@ function Content() {
     setswapIDInfo(display)
     console.log(display)
   }
+  async function handleSubmitSwap2() {
+    const result = await funcGetSwapinfo(swapID)
+    console.log(result)
+  }
 
   return (
     <>
@@ -250,6 +275,13 @@ function Content() {
           <label htmlFor="swapID">swapID : </label>
           <input type="text" id="swap" name="swap" onChange={handleChangeSwap} value={swapID} />
           <button onClick={handleSubmitSwap}>click</button>
+          <p>Result : {swapIDInfo}</p>
+        </div>
+        <h2>Get Swap 2: </h2>
+        <div>
+          <label htmlFor="swapID">swapID : </label>
+          <input type="text" id="swap" name="swap" onChange={handleChangeSwap} value={swapID} />
+          <button onClick={handleSubmitSwap2}>click</button>
           <p>Result : {swapIDInfo}</p>
         </div>
       </div>
