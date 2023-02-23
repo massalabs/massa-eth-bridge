@@ -18,7 +18,7 @@ const Events = () => {
     const provider = new providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner()
 
-    // instantiating contracts to interact with them
+    // Instantiating contracts to interact with them
     const contract_SWAP_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_SWAP_ERC20, swapERC20.abi, provider);
 
     const handleInputChange = (index) => (event) => {
@@ -27,7 +27,7 @@ const Events = () => {
         setInputValues(updatedInputValues);
     };
 
-    // Activation by form
+    // Running when form are submited
     const handleSubmit = (ID, index) => async (event) => {
         event.preventDefault();
 

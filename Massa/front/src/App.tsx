@@ -9,11 +9,15 @@ import {
   IDatastoreEntry,
   IProvider,
   ProviderType,
-  IDatastoreEntryInput
+  IDatastoreEntryInput,
+  bytesToStr,
+  strToBytes,
+  MassaCoin,
 } from '@massalabs/massa-web3';
 import React from 'react';
 import { useEffect, useState } from 'react';
 
+// Importing addresses and RPC
 const sc_addr = "A123DomKuDckrAtefuu7qoyjJA9DjFUxniWqdxD4JmmgGg3zjks8"
 const JSON_RPC_URL_PUBLIC = import.meta.env.VITE_JSON_RPC_URL_PUBLIC;
 const WALLET_PRIVATE_KEY = import.meta.env.VITE_WALLET_PRIVATE_KEY;
@@ -21,19 +25,21 @@ const WALLET_PUBLIC_KEY = import.meta.env.VITE_WALLET_PUBLIC_KEY;
 const WALLET_ADDRESS = import.meta.env.VITE_WALLET_ADDRESS;
 
 function Content() {
+  // Creating variable to store informations about massa-web3
   const [web3client, setWeb3client] = useState<Client | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [base_account, setAccount] = useState<IAccount | null>(null);
-
+  
+  // Runinng when component instantiating
   useEffect(() => {
+    // Creating Client
     const initClient = async () => {
+
       const base_account = {
+        address: WALLET_ADDRESS,
         publicKey: WALLET_PUBLIC_KEY,
         secretKey: WALLET_PRIVATE_KEY,
-        address: WALLET_ADDRESS,
       } as IAccount;
-      setAccount(base_account)
-
       const client = await ClientFactory.createCustomClient(
         [
           { url: JSON_RPC_URL_PUBLIC, type: ProviderType.PUBLIC } as IProvider,
@@ -45,22 +51,25 @@ function Content() {
         base_account,
       );
 
-
-      // get the balance of the wallet
+      // Getting the balance of the wallet
       const balance: IBalance | null = await client.wallet().getAccountBalance(WALLET_ADDRESS);
+      
+      // Instantiating Client, account and balance
       setWeb3client(client);
-      setBalance(balance!.final.toValue())
+      setAccount(base_account)
+      setBalance(balance!.final.rawValue().toNumber())
     }
 
     initClient().catch(console.error);
   }, []);
 
-  async function DisplayEvent(opIds: string) {
+  // Recovering Event of the tx
+  async function DisplayEvent(opIds: string): Promise<string> {
 
-    // Wait the end of deployment
     if (web3client) {
+      // Waitting the end of deployment
       await web3client.smartContracts().awaitRequiredOperationStatus(opIds, EOperationStatus.FINAL);
-
+      // Getting Event from opIds
       const event = await web3client.smartContracts().getFilteredScOutputEvents({
         emitter_address: null,
         start: null,
@@ -71,21 +80,21 @@ function Content() {
       });
 
       if (event.length) {
-        let result
+        let result = ""
         // This prints the deployed SC address
         event.forEach((e) => {
           result = e.data
-          console.log(e.data);
         });
         return result
       }
       else {
-        console.log('Call done. No events has been generated');
         return ('Call done. No events has been generated')
       }
     }
+    return ('Web3client not initialized')
   }
 
+  // Starting to Open Swap
   async function funcOpen(swapID: string, timeLock: number, massaValue: number, withdrawTrader: string, secretLock: string) {
     let args = new Args();
     args.addString(swapID);
@@ -94,10 +103,11 @@ function Content() {
     args.addString(withdrawTrader);
     args.addString(secretLock);
     if (web3client && base_account) {
+      // Sending tx to open function with all parameter
       const tx = await web3client.smartContracts().callSmartContract({
         fee: 0,
         maxGas: 1000000000,
-        coins: 0.1,
+        coins: new MassaCoin(0.1),
         targetAddress: sc_addr,
         functionName: "open",
         parameter: args.serialize()
@@ -106,18 +116,20 @@ function Content() {
       );
       return (tx.toString())
     }
-    return ('nothing')
+    return ('Web3client not initialized')
   }
 
+  // Starting to Close Swap
   async function funcClose(swapID: string, secretKey: string) {
     let args = new Args();
     args.addString(swapID);
     args.addString(secretKey);
     if (web3client && base_account) {
+      // Sending tx to close function with all parameter
       const tx = await web3client.smartContracts().callSmartContract({
         fee: 0,
         maxGas: 1000000000,
-        coins: 0.1,
+        coins: new MassaCoin(0.1),
         targetAddress: sc_addr,
         functionName: "close",
         parameter: args.serialize()
@@ -126,80 +138,81 @@ function Content() {
       );
       return (tx.toString())
     }
-    return ('nothing')
+    return ('Web3client not initialized')
   }
 
+  // Starting to Expire Swap
   async function funcExpire(swapID: string) {
     let args = new Args();
     args.addString(swapID);
-    if (web3client) {
-      await web3client.smartContracts().callSmartContract({
+    if (web3client && base_account) {
+      // Sending tx to expire function with all parameter
+      const tx = await web3client.smartContracts().callSmartContract({
         fee: 0,
-        maxGas: 1000000,
-        coins: 0.1,
+        maxGas: 1000000000,
+        coins: new MassaCoin(0.1),
         targetAddress: sc_addr,
         functionName: "expire",
-        parameter: args.serialize()
-      });
-    }
-  }
-
-  async function funcSwap(swapID: string) {
-    let args = new Args();
-    args.addString(swapID);
-    if (web3client && base_account) {
-      const result = await web3client.smartContracts().callSmartContract({
-        fee: 0,
-        maxGas: 1000000,
-        coins: 0.1,
-        targetAddress: sc_addr,
-        functionName: "swap",
         parameter: args.serialize()
       } as ICallData,
         base_account
       );
-      return (result.toString())
+      return (tx.toString())
     }
-    return ('nothing')
+    return ('Web3client not initialized')
   }
 
+  // Starting to get Swap's informations
   async function funcGetSwapinfo(swapID: string) {
-    let args = new Args();
-    args.addString(swapID);
     if (web3client && base_account) {
-      const datastoreEntries: Array<IDatastoreEntry> = await web3client
+      // Getting data stored in specific key given by the user
+      const datastoreEntries: IDatastoreEntry[] = await web3client
         .publicApi()
         .getDatastoreEntries([
           {
             address: sc_addr,
-            key: [0],
-            //key: "swap1"
-          } as IDatastoreEntryInput,
+            key: strToBytes(swapID)
+        } as IDatastoreEntryInput,
         ]);
-      console.log(datastoreEntries[0])
-      return(datastoreEntries)
+      if (!datastoreEntries[0].final_value) {
+        return (strToBytes('Storage contains null for that key. Something is wrong'))
+      }
+      return (datastoreEntries[0].final_value)
     }
-    return ('nothing')
+    return (strToBytes('Web3client not initialized'))
   }
-  
-  const [openState, setopenState] = React.useState({
+
+  // Creating variables to store the state of the button
+  const [disabled, setDisabled] = useState({
+    open: false,
+    close: false,
+    get: false,
+    expire: false
+  });
+  // Creating variables to store user input
+  const [openState, setopenState] = useState({
     swapID: "",
     timeLock: 0,
     massaValue: 0,
     withdrawTrader: "",
     secretLock: ""
   })
-
-  const [closeState, setcloseState] = React.useState({
+  const [closeState, setcloseState] = useState({
     swapID: "",
     secretKey: ""
   })
-
+  const [expireState, setexpireState] = useState({
+    swapID: ""
+  })
   const [swapID, setswapID] = useState('');
+  // Creating variables to store SC output
   const [swapIDInfo, setswapIDInfo] = useState('');
   const [openInfo, setopenInfo] = useState('');
   const [closeInfo, setcloseInfo] = useState('');
+  const [expireInfo, setexpireInfo] = useState('');
 
+
+  // Running when inputs are changed
   const handleChangeOpen = (event: { target: { value: string | number; name: any; }; }) => {
     setopenState({
       ...openState,
@@ -215,36 +228,57 @@ function Content() {
   const handleChangeSwap = (event: { target: { value: React.SetStateAction<string>; }; }) => {
     setswapID(event.target.value)
   }
+  const handleChangeExpire = (event: { target: { value: string | number; name: any; }; }) => {
+    setexpireState({
+      ...expireState,
+      [event.target.name]: event.target.value
+    });
+  }
 
+  // Running when button are clicked
   async function handleSubmitOpen() {
+    setDisabled({...disabled,open: true});
     const result = await funcOpen(openState.swapID, openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
+    setopenInfo("transaction sent and in process")
+    // Getting events
     const display = await DisplayEvent(result)
+    // Storing result
     setopenInfo(display)
-    console.log(display)
+    setDisabled({...disabled,open: false});
   }
   async function handleSubmitClose() {
+    setDisabled({...disabled,close: true});
     const result = await funcClose(closeState.swapID, closeState.secretKey)
+    setcloseInfo("transaction sent and in process")
+    // Getting events
     const display = await DisplayEvent(result)
+    // Storing result
     setcloseInfo(display)
-    console.log(display)
+    setDisabled({...disabled,close: false});
   }
   async function handleSubmitSwap() {
-    const result = await funcSwap(swapID)
-    const display = await DisplayEvent(result)
-    setswapIDInfo(display)
-    console.log(display)
-  }
-  async function handleSubmitSwap2() {
+    setDisabled({...disabled,get: true});
     const result = await funcGetSwapinfo(swapID)
-    console.log(result)
+    // Storing result
+    setswapIDInfo(bytesToStr(result))
+    setDisabled({...disabled,get: false});
+  }
+  async function handleSubmitExpire() {
+    setDisabled({...disabled,expire: true});
+    const result = await funcExpire(expireState.swapID)
+    setexpireInfo("transaction sent and in process")
+    // Getting events
+    const display = await DisplayEvent(result)
+    // Storing result
+    setexpireInfo(display)
+    setDisabled({...disabled,expire: false});
   }
 
   return (
     <>
       <div>
         <h1>BRIDGE Massa </h1>
-        <div>
-          <p>your balance : {balance}</p>
+        <div>your balance : {balance}
         </div>
         <h2>Open Swap : </h2>
         <div>
@@ -258,7 +292,7 @@ function Content() {
           <input type="text" name="withdrawTrader" value={openState.withdrawTrader} onChange={handleChangeOpen} />
           <label htmlFor="secretLock">secretLock : </label>
           <input type="text" name="secretLock" value={openState.secretLock} onChange={handleChangeOpen} />
-          <button onClick={handleSubmitOpen}>create</button>
+          <button onClick={handleSubmitOpen} disabled={disabled.open}>open</button>
           <p>Result : {openInfo}</p>
         </div>
         <h2>Close Swap : </h2>
@@ -267,22 +301,22 @@ function Content() {
           <input type="text" name="swapID" value={closeState.swapID} onChange={handleChangeClose} />
           <label htmlFor="secretKey">secretKey : </label>
           <input type="text" name="secretKey" value={closeState.secretKey} onChange={handleChangeClose} />
-          <button onClick={handleSubmitClose}>create</button>
+          <button onClick={handleSubmitClose} disabled={disabled.close}>close</button>
           <p>Result : {closeInfo}</p>
         </div>
         <h2>Get Swap : </h2>
         <div>
           <label htmlFor="swapID">swapID : </label>
           <input type="text" id="swap" name="swap" onChange={handleChangeSwap} value={swapID} />
-          <button onClick={handleSubmitSwap}>click</button>
+          <button onClick={handleSubmitSwap} disabled={disabled.get}>get</button>
           <p>Result : {swapIDInfo}</p>
         </div>
-        <h2>Get Swap 2: </h2>
+        <h2>Expire Swap : </h2>
         <div>
           <label htmlFor="swapID">swapID : </label>
-          <input type="text" id="swap" name="swap" onChange={handleChangeSwap} value={swapID} />
-          <button onClick={handleSubmitSwap2}>click</button>
-          <p>Result : {swapIDInfo}</p>
+          <input type="text" name="swapID" onChange={handleChangeExpire} value={expireState.swapID} />
+          <button onClick={handleSubmitExpire} disabled={disabled.expire}>expire</button>
+          <p>Result : {expireInfo}</p>
         </div>
       </div>
     </>
