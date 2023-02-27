@@ -5,9 +5,11 @@ With npm:
 ```bash
 npm install
 ```
+To send transactions, you need to configure your project with the RPC_URL. This is done using the .env file. The project comes with a template .env.example file that you can use and change VITE_JSON_RPC_URL_PUBLIC="https://inno.massa.net/test19":
 
-You must add a `.env` file at the root of the repository with the following keys set to valid values :
-- VITE_JSON_RPC_URL_PUBLIC="https://inno.massa.net/test19"
+```bash
+cp .env.example .env
+```
 
 To run the project locally:
 
