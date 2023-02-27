@@ -15,53 +15,22 @@ import {
   MassaCoin,
 } from '@massalabs/massa-web3';
 import React from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 // Importing addresses and RPC
 const sc_addr = "A123DomKuDckrAtefuu7qoyjJA9DjFUxniWqdxD4JmmgGg3zjks8"
 const JSON_RPC_URL_PUBLIC = import.meta.env.VITE_JSON_RPC_URL_PUBLIC;
-const WALLET_PRIVATE_KEY = import.meta.env.VITE_WALLET_PRIVATE_KEY;
-const WALLET_PUBLIC_KEY = import.meta.env.VITE_WALLET_PUBLIC_KEY;
-const WALLET_ADDRESS = import.meta.env.VITE_WALLET_ADDRESS;
 
 function Content() {
   // Creating variable to store informations about massa-web3
   const [web3client, setWeb3client] = useState<Client | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [base_account, setAccount] = useState<IAccount | null>(null);
-  
-  // Runinng when component instantiating
-  useEffect(() => {
-    // Creating Client
-    const initClient = async () => {
-
-      const base_account = {
-        address: WALLET_ADDRESS,
-        publicKey: WALLET_PUBLIC_KEY,
-        secretKey: WALLET_PRIVATE_KEY,
-      } as IAccount;
-      const client = await ClientFactory.createCustomClient(
-        [
-          { url: JSON_RPC_URL_PUBLIC, type: ProviderType.PUBLIC } as IProvider,
-          // This IP is false but we don't need private for this script so we don't want to ask one to the user
-          // but massa-web3 requires one
-          { url: JSON_RPC_URL_PUBLIC, type: ProviderType.PRIVATE } as IProvider,
-        ],
-        true,
-        base_account,
-      );
-
-      // Getting the balance of the wallet
-      const balance: IBalance | null = await client.wallet().getAccountBalance(WALLET_ADDRESS);
-      
-      // Instantiating Client, account and balance
-      setWeb3client(client);
-      setAccount(base_account)
-      setBalance(balance!.final.rawValue().toNumber())
-    }
-
-    initClient().catch(console.error);
-  }, []);
+  const [wallet, setwallet] = useState({
+    secret: "",
+    public: "",
+    address: "",
+  })
 
   // Recovering Event of the tx
   async function DisplayEvent(opIds: string): Promise<string> {
@@ -184,6 +153,7 @@ function Content() {
 
   // Creating variables to store the state of the button
   const [disabled, setDisabled] = useState({
+    wallet: false,
     open: false,
     close: false,
     get: false,
@@ -213,6 +183,12 @@ function Content() {
 
 
   // Running when inputs are changed
+  const handleChangeSet = (event: { target: { value: string | number; name: any; }; }) => {
+    setwallet({
+      ...wallet,
+      [event.target.name]: event.target.value
+    });
+  }
   const handleChangeOpen = (event: { target: { value: string | number; name: any; }; }) => {
     setopenState({
       ...openState,
@@ -236,6 +212,33 @@ function Content() {
   }
 
   // Running when button are clicked
+  async function handleSubmitSet() {
+    setDisabled({...disabled,wallet: true});
+    const base_account = {
+      address: wallet.address,
+      publicKey: wallet.public,
+      secretKey: wallet.secret,
+    } as IAccount;
+    const client = await ClientFactory.createCustomClient(
+      [
+        { url: JSON_RPC_URL_PUBLIC, type: ProviderType.PUBLIC } as IProvider,
+        // This IP is false but we don't need private for this script so we don't want to ask one to the user
+        // but massa-web3 requires one
+        { url: JSON_RPC_URL_PUBLIC, type: ProviderType.PRIVATE } as IProvider,
+      ],
+      true,
+      base_account,
+    );
+
+    // Getting the balance of the wallet
+    const balance: IBalance | null = await client.wallet().getAccountBalance(wallet.address);
+    
+    // Instantiating Client, account and balance
+    setWeb3client(client);
+    setAccount(base_account)
+    setBalance(balance!.final.rawValue().toNumber())
+    setDisabled({...disabled,wallet: false});
+  }
   async function handleSubmitOpen() {
     setDisabled({...disabled,open: true});
     const result = await funcOpen(openState.swapID, openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
@@ -278,6 +281,16 @@ function Content() {
     <>
       <div>
         <h1>BRIDGE Massa </h1>
+        <h2>Set your Wallet : </h2>
+        <div>
+          <label htmlFor="secret">private key : </label>
+          <input type="text" name="secret" value={wallet.secret} onChange={handleChangeSet} />
+          <label htmlFor="public">public key : </label>
+          <input type="text" name="public" value={wallet.public} onChange={handleChangeSet} />
+          <label htmlFor="address">address : </label>
+          <input type="text" name="address" value={wallet.address} onChange={handleChangeSet} />
+          <button onClick={handleSubmitSet} disabled={disabled.wallet}>connect</button>
+        </div>
         <div>your balance : {balance}
         </div>
         <h2>Open Swap : </h2>
