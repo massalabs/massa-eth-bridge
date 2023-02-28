@@ -13,13 +13,31 @@ import {
   bytesToStr,
   strToBytes,
   MassaCoin,
+  WalletClient,
 } from '@massalabs/massa-web3';
 import React from 'react';
 import { useState } from 'react';
 
 // Importing addresses and RPC
 const sc_addr = "A123DomKuDckrAtefuu7qoyjJA9DjFUxniWqdxD4JmmgGg3zjks8"
-const JSON_RPC_URL_PUBLIC = import.meta.env.VITE_JSON_RPC_URL_PUBLIC;
+const VITE_JSON_RPC_URL_PUBLIC_main = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_main;
+const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
+const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
+
+const options = [
+  {
+    label: "mainnet",
+    value: VITE_JSON_RPC_URL_PUBLIC_main,
+  },
+  {
+    label: "testnet",
+    value: VITE_JSON_RPC_URL_PUBLIC_test,
+  },
+  {
+    label: "innonet",
+    value: VITE_JSON_RPC_URL_PUBLIC_inno,
+  }
+]
 
 function Content() {
   // Creating variable to store informations about massa-web3
@@ -28,8 +46,7 @@ function Content() {
   const [base_account, setAccount] = useState<IAccount | null>(null);
   const [wallet, setwallet] = useState({
     secret: "",
-    public: "",
-    address: "",
+    RPC: VITE_JSON_RPC_URL_PUBLIC_main,
   })
 
   // Recovering Event of the tx
@@ -141,7 +158,7 @@ function Content() {
           {
             address: sc_addr,
             key: strToBytes(swapID)
-        } as IDatastoreEntryInput,
+          } as IDatastoreEntryInput,
         ]);
       if (!datastoreEntries[0].final_value) {
         return (strToBytes('Storage contains null for that key. Something is wrong'))
@@ -213,68 +230,66 @@ function Content() {
 
   // Running when button are clicked
   async function handleSubmitSet() {
-    setDisabled({...disabled,wallet: true});
-    const base_account = {
-      address: wallet.address,
-      publicKey: wallet.public,
-      secretKey: wallet.secret,
-    } as IAccount;
+    setDisabled({ ...disabled, wallet: true });
+
+    // Initiating wallet
+    const base_account = await WalletClient.getAccountFromSecretKey(wallet.secret) as IAccount
     const client = await ClientFactory.createCustomClient(
       [
-        { url: JSON_RPC_URL_PUBLIC, type: ProviderType.PUBLIC } as IProvider,
+        { url: wallet.RPC, type: ProviderType.PUBLIC } as IProvider,
         // This IP is false but we don't need private for this script so we don't want to ask one to the user
         // but massa-web3 requires one
-        { url: JSON_RPC_URL_PUBLIC, type: ProviderType.PRIVATE } as IProvider,
+        { url: wallet.RPC, type: ProviderType.PRIVATE } as IProvider,
       ],
       true,
       base_account,
     );
 
     // Getting the balance of the wallet
-    const balance: IBalance | null = await client.wallet().getAccountBalance(wallet.address);
-    
+    const balance: IBalance | null = await client.wallet().getAccountBalance(base_account.address!);
+
     // Instantiating Client, account and balance
     setWeb3client(client);
     setAccount(base_account)
     setBalance(balance!.final.rawValue().toNumber())
-    setDisabled({...disabled,wallet: false});
+    setDisabled({ ...disabled, wallet: false });
   }
   async function handleSubmitOpen() {
-    setDisabled({...disabled,open: true});
+    setDisabled({ ...disabled, open: true });
     const result = await funcOpen(openState.swapID, openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
     setopenInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)
     // Storing result
     setopenInfo(display)
-    setDisabled({...disabled,open: false});
+    setDisabled({ ...disabled, open: false });
   }
   async function handleSubmitClose() {
-    setDisabled({...disabled,close: true});
+    setDisabled({ ...disabled, close: true });
     const result = await funcClose(closeState.swapID, closeState.secretKey)
     setcloseInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)
     // Storing result
     setcloseInfo(display)
-    setDisabled({...disabled,close: false});
+    setDisabled({ ...disabled, close: false });
   }
   async function handleSubmitSwap() {
-    setDisabled({...disabled,get: true});
+    setDisabled({ ...disabled, get: true });
     const result = await funcGetSwapinfo(swapID)
     // Storing result
     setswapIDInfo(bytesToStr(result))
-    setDisabled({...disabled,get: false});
+    setDisabled({ ...disabled, get: false });
   }
   async function handleSubmitExpire() {
-    setDisabled({...disabled,expire: true});
+    setDisabled({ ...disabled, expire: true });
     const result = await funcExpire(expireState.swapID)
     setexpireInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)
     // Storing result
     setexpireInfo(display)
-    setDisabled({...disabled,expire: false});
+    setDisabled({ ...disabled, expire: false });
   }
 
   return (
@@ -285,10 +300,14 @@ function Content() {
         <div>
           <label htmlFor="secret">private key : </label>
           <input type="text" name="secret" value={wallet.secret} onChange={handleChangeSet} />
-          <label htmlFor="public">public key : </label>
-          <input type="text" name="public" value={wallet.public} onChange={handleChangeSet} />
-          <label htmlFor="address">address : </label>
-          <input type="text" name="address" value={wallet.address} onChange={handleChangeSet} />
+          <span> </span>
+          <select name="RPC" value={wallet.RPC} onChange={handleChangeSet}>
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <p>Your current Network :</p>
+          <p>{wallet.RPC}</p>
           <button onClick={handleSubmitSet} disabled={disabled.wallet}>connect</button>
         </div>
         <div>your balance : {balance}
