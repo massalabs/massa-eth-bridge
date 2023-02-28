@@ -310,7 +310,11 @@ function Content() {
           <p>{wallet.RPC}</p>
           <button onClick={handleSubmitSet} disabled={disabled.wallet}>connect</button>
         </div>
-        <div>your balance : {balance}
+        <div>
+          <div>
+          Address :{base_account?.address}
+          </div>
+          Balance : {balance}
         </div>
         <h2>Open Swap : </h2>
         <div>
