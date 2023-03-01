@@ -1,5 +1,5 @@
 import { Args, bytesToString, stringToBytes } from '@massalabs/as-types';
-import { event, expire, SWAP, swap } from '../contracts/main';
+import { currentSwap, event, expire, SWAP, swap } from '../contracts/main';
 import { open, close } from '../contracts/main';
 import { Storage } from '@massalabs/massa-as-sdk';
 
@@ -15,40 +15,14 @@ describe('Open swap test', () => {
       bytesToString(
         open(
           new Args()
-            .add('ID1')
             .add(10 as u64)
             .add(40 as u64)
             .add('ox345266')
-            .add('ox345266')
+            .add('secretKey')
             .serialize(),
         ),
       ),
     ).toStrictEqual('Swap was successfully opened');
-    expect(Storage.get(stringToBytes('ID1'))).not.toBeNull();
-  });
-  test('Create same swap', () => {
-    open(
-      new Args()
-        .add('ID2')
-        .add(10 as u64)
-        .add(40 as u64)
-        .add('ox345266')
-        .add('ox345266')
-        .serialize(),
-    );
-    expect(
-      bytesToString(
-        open(
-          new Args()
-            .add('ID2')
-            .add(10 as u64)
-            .add(40 as u64)
-            .add('ox345266')
-            .add('ox345266')
-            .serialize(),
-        ),
-      ),
-    ).toStrictEqual('Swap already exists');
   });
 });
 
@@ -58,7 +32,6 @@ describe('Close swap test', () => {
       bytesToString(
         open(
           new Args()
-            .add('ID3')
             .add(10 as u64)
             .add(40 as u64)
             .add('ox345266')
@@ -68,12 +41,12 @@ describe('Close swap test', () => {
       ),
     ).toStrictEqual('Swap was successfully opened');
     expect(
-      bytesToString(close(new Args().add('ID3').add('secretKey').serialize())),
+      bytesToString(close(new Args().add("2").add('secretKey').serialize())),
     ).toStrictEqual('Swap closed');
   });
   test("Can't close swap because not open", () => {
     expect(
-      bytesToString(close(new Args().add('ID3').add('ox345266').serialize())),
+      bytesToString(close(new Args().add('2').add('secretKey').serialize())),
     ).toStrictEqual('Swap not open');
   });
   test("Can't close swap because wrong secretkey", () => {
@@ -81,7 +54,6 @@ describe('Close swap test', () => {
       bytesToString(
         open(
           new Args()
-            .add('ID4')
             .add(10 as u64)
             .add(40 as u64)
             .add('ox345266')
@@ -91,12 +63,11 @@ describe('Close swap test', () => {
       ),
     ).toStrictEqual('Swap was successfully opened');
     expect(
-      bytesToString(close(new Args().add('ID4').add('différentekey').serialize())),
+      bytesToString(close(new Args().add('3').add('différentekey').serialize())),
     ).toStrictEqual('Wrong secretkey for this swap');
   });
 });
 
-const SWAP1ID = 'ID5';
 const SWAP1state = 'OPEN';
 const SWAP1timeLock = 0;
 const SWAP1secretLock = 'ox345266';
@@ -108,7 +79,6 @@ describe('Status swap test', () => {
       bytesToString(
         open(
           new Args()
-            .add(SWAP1ID)
             .add(SWAP1timeLock as u64)
             .add(40 as u64)
             .add('ox345266')
@@ -118,7 +88,7 @@ describe('Status swap test', () => {
       ),
     ).toStrictEqual('Swap was successfully opened');
     expect(
-      bytesToString(swap(new Args().add('ID5').serialize())),
+      bytesToString(swap(new Args().add('4').serialize())),
     ).toStrictEqual(`${SWAP1state}, ${SWAP1secretLock}, ${SWAP1secretKey}`);
   });
   test('Status Swap was not created', () => {
@@ -126,7 +96,6 @@ describe('Status swap test', () => {
       bytesToString(
         open(
           new Args()
-            .add('ID6')
             .add(10 as u64)
             .add(40 as u64)
             .add('ox345266')
@@ -149,7 +118,7 @@ describe('Expire swap test', () => {
   });
   test('Swap not open', () => {
     expect(
-      bytesToString(expire(new Args().add('ID3').serialize())),
+      bytesToString(expire(new Args().add('2').serialize())),
     ).toStrictEqual(`Swap not open`);
   });
   test('Wrong timeLock', () => {
@@ -157,7 +126,6 @@ describe('Expire swap test', () => {
       bytesToString(
         open(
           new Args()
-            .add("ID7")
             .add(20000000000000 as u64)
             .add(40 as u64)
             .add('ox345266')
@@ -167,7 +135,7 @@ describe('Expire swap test', () => {
       ),
     ).toStrictEqual('Swap was successfully opened');
     expect(
-      bytesToString(expire(new Args().add('ID7').serialize())),
+      bytesToString(expire(new Args().add('6').serialize())),
     ).toStrictEqual(`Wrong timeLock for this swap`);
   });
   test('Expire Swap', () => {
@@ -175,7 +143,6 @@ describe('Expire swap test', () => {
       bytesToString(
         open(
           new Args()
-            .add("ID8")
             .add(1 as u64)
             .add(40 as u64)
             .add('ox345266')
@@ -185,7 +152,15 @@ describe('Expire swap test', () => {
       ),
     ).toStrictEqual('Swap was successfully opened');
     expect(
-      bytesToString(expire(new Args().add('ID8').serialize())),
+      bytesToString(expire(new Args().add('4').serialize())),
     ).toStrictEqual(`Swap expired`);
+  });
+});
+
+describe('Get swap test', () => {
+  test('Swap not exist', () => {
+    expect(
+      currentSwap().toString(),
+    ).toStrictEqual(`7`);
   });
 });

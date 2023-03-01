@@ -19,7 +19,7 @@ import React from 'react';
 import { useState } from 'react';
 
 // Importing addresses and RPC
-const sc_addr = "A123DomKuDckrAtefuu7qoyjJA9DjFUxniWqdxD4JmmgGg3zjks8"
+const sc_addr = "A12bU14L7GM6doMLcQPVquHgYnnp4GY4YZRXe81MeS5dyUXmepqh"
 const VITE_JSON_RPC_URL_PUBLIC_main = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_main;
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
@@ -48,6 +48,7 @@ function Content() {
     secret: "",
     RPC: VITE_JSON_RPC_URL_PUBLIC_main,
   })
+  const [swaps, setSwaps] = useState<string[][]>([]);
 
   // Recovering Event of the tx
   async function DisplayEvent(opIds: string): Promise<string> {
@@ -81,9 +82,8 @@ function Content() {
   }
 
   // Starting to Open Swap
-  async function funcOpen(swapID: string, timeLock: number, massaValue: number, withdrawTrader: string, secretLock: string) {
+  async function funcOpen(timeLock: number, massaValue: number, withdrawTrader: string, secretLock: string) {
     let args = new Args();
-    args.addString(swapID);
     args.addU64(BigInt(timeLock));
     args.addU64(BigInt(massaValue))
     args.addString(withdrawTrader);
@@ -168,6 +168,26 @@ function Content() {
     return (strToBytes('Web3client not initialized'))
   }
 
+  // Starting to get current swap
+  async function listSwaps() {
+    if (web3client && base_account) {
+      // Getting data stored in specific key given by the user
+      const datastoreEntries: IDatastoreEntry[] = await web3client
+        .publicApi()
+        .getDatastoreEntries([
+          {
+            address: sc_addr,
+            key: strToBytes('Counter')
+          } as IDatastoreEntryInput,
+        ]);
+      if (!datastoreEntries[0].final_value![0]) {
+        return (strToBytes('Storage contains null for that key. Something is wrong'))
+      }
+      return (datastoreEntries[0].final_value![0])
+    }
+    return (strToBytes('Web3client not initialized'))
+  }
+
   // Creating variables to store the state of the button
   const [disabled, setDisabled] = useState({
     wallet: false,
@@ -178,7 +198,6 @@ function Content() {
   });
   // Creating variables to store user input
   const [openState, setopenState] = useState({
-    swapID: "",
     timeLock: 0,
     massaValue: 0,
     withdrawTrader: "",
@@ -193,7 +212,7 @@ function Content() {
   })
   const [swapID, setswapID] = useState('');
   // Creating variables to store SC output
-  const [swapIDInfo, setswapIDInfo] = useState('');
+  const [swapIDInfo, setswapIDInfo] = useState(['']);
   const [openInfo, setopenInfo] = useState('');
   const [closeInfo, setcloseInfo] = useState('');
   const [expireInfo, setexpireInfo] = useState('');
@@ -249,14 +268,14 @@ function Content() {
     const balance: IBalance | null = await client.wallet().getAccountBalance(base_account.address!);
 
     // Instantiating Client, account and balance
-    setWeb3client(client);
+    await setWeb3client(client);
     setAccount(base_account)
     setBalance(balance!.final.rawValue().toNumber())
     setDisabled({ ...disabled, wallet: false });
   }
   async function handleSubmitOpen() {
     setDisabled({ ...disabled, open: true });
-    const result = await funcOpen(openState.swapID, openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
+    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
     setopenInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)
@@ -277,8 +296,14 @@ function Content() {
   async function handleSubmitSwap() {
     setDisabled({ ...disabled, get: true });
     const result = await funcGetSwapinfo(swapID)
+    const str1 = bytesToStr(result).replace(/[^\x20-\x7E]/g, '')
+    const str = str1.replace(',', '')
+    if (str.substr(0, 4) == 'OPEN') {
+      setswapIDInfo([str.substr(0, 4), str.substring(5, 6), str.substring(6, str.length - 10), str.substr(str.length - 5, 5), str.substr(str.length - 10, 5)])
+    } else {
+      setswapIDInfo([str.substr(0, 5), str.substring(6, 7), str.substring(7, str.length - 10), str.substr(str.length - 5, 5), str.substr(str.length - 10, 5)])
+    }
     // Storing result
-    setswapIDInfo(bytesToStr(result))
     setDisabled({ ...disabled, get: false });
   }
   async function handleSubmitExpire() {
@@ -290,6 +315,23 @@ function Content() {
     // Storing result
     setexpireInfo(display)
     setDisabled({ ...disabled, expire: false });
+  }
+  async function handleSubmitOrderBook() {
+    setDisabled({ ...disabled, wallet: true });
+    const result = await listSwaps()
+    let temporarySwaps = []
+    for (let i = 1; i <= result; i++) {
+      let infoSwap = await funcGetSwapinfo(i.toString())
+      let str1 = bytesToStr(infoSwap).replace(/[^\x20-\x7E]/g, '')
+      const str = str1.replace(',', '')
+      if (str.substr(0, 4) == 'OPEN') {
+        temporarySwaps.push([str.substr(0, 4), " ", str.substring(5, 6), " ", str.substring(6, str.length - 10), " ", str.substr(str.length - 5, 5), " ", str.substr(str.length - 10, 5)])
+      } else {
+        temporarySwaps.push([str.substr(0, 5), " ", str.substring(6, 7), " ", str.substring(7, str.length - 10), " ", str.substr(str.length - 5, 5), " ", str.substr(str.length - 10, 5)])
+      }
+    }
+    setSwaps(temporarySwaps)
+    setDisabled({ ...disabled, wallet: false });
   }
 
   return (
@@ -312,14 +354,12 @@ function Content() {
         </div>
         <div>
           <div>
-          Address :{base_account?.address}
+            Address :{base_account?.address}
           </div>
           Balance : {balance}
         </div>
         <h2>Open Swap : </h2>
         <div>
-          <label htmlFor="swapID">swapID : </label>
-          <input type="text" name="swapID" value={openState.swapID} onChange={handleChangeOpen} />
           <label htmlFor="timeLock">timeLock : </label>
           <input type="number" name="timeLock" value={openState.timeLock} onChange={handleChangeOpen} />
           <label htmlFor="massaValue">massaValue : </label>
@@ -353,6 +393,24 @@ function Content() {
           <input type="text" name="swapID" onChange={handleChangeExpire} value={expireState.swapID} />
           <button onClick={handleSubmitExpire} disabled={disabled.expire}>expire</button>
           <p>Result : {expireInfo}</p>
+        </div>
+        <h2>Order book : </h2>
+        <button onClick={handleSubmitOrderBook} disabled={disabled.wallet}>display order book</button>
+        <div>
+          {swaps.map((item, index) => (
+            <div>
+              <table>
+                <tbody>
+                  <tr>
+                    <th scope="col">swap {index + 1}:</th>
+                  </tr>
+                  <tr>
+                    <td>{item}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          ))}
         </div>
       </div>
     </>

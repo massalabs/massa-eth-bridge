@@ -1,7 +1,14 @@
 // The entry file of your WebAssembly module.
 import { Storage, generateEvent, Address, transferCoins } from '@massalabs/massa-as-sdk';
-import { Args, Result, Serializable, stringToBytes } from '@massalabs/as-types';
+import { Args, bytesToU64, Result, Serializable, stringToBytes, toBytes, u64ToBytes } from '@massalabs/as-types';
 import { timestamp, transactionCreator, transferedCoins } from '@massalabs/massa-as-sdk/assembly/std/context';
+
+export const counterKey = stringToBytes('Counter');
+export const initCounter = 0;
+
+export function constructor(): void {
+  Storage.set(counterKey, u64ToBytes(initCounter));
+}
 
 export function event(_: StaticArray<u8>): StaticArray<u8> {
   const message = "I'm an event!";
@@ -56,7 +63,6 @@ export class SWAP implements Serializable {
 // define class OpenSwapRequest to work with open function
 export class OpenSwapRequest implements Serializable {
   constructor(
-    public swapID: string = '',
     public timeLock: u64 = 0,
     public massaValue: u64 = 0,
     public withdrawTrader: string = '',
@@ -65,7 +71,6 @@ export class OpenSwapRequest implements Serializable {
 
   public serialize(): StaticArray<u8> {
     const args = new Args();
-    args.add(this.swapID);
     args.add(this.timeLock);
     args.add(this.massaValue);
     args.add(this.withdrawTrader);
@@ -75,9 +80,6 @@ export class OpenSwapRequest implements Serializable {
 
   public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
     const args = new Args(data, offset);
-    this.swapID = args
-      .nextString()
-      .expect("Can't deserialize OpenSwapRequest.swapID");
     this.timeLock = args
       .nextU64()
       .expect("Can't deserialize OpenSwapRequest.timeLock");
@@ -168,14 +170,6 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     .nextSerializable<OpenSwapRequest>(new OpenSwapRequest)
     .expect("Can't deserialize OpenSwapRequest in open function");
 
-  // search for a swap with swapID
-  const storedSwap = Storage.has(requestData.swapID);
-  // ... if found, return (Swap already exists)
-  if (storedSwap) {
-    generateEvent('Swap already exists');
-    return stringToBytes('Swap already exists');
-  }
-
   //let coinCallerSend = transferedCoins()
   //if (coinCallerSend != requestData.massaValue) {
   //  return stringToBytes('Coins send by Caller no corresponding with massaValue');
@@ -193,7 +187,8 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   // set the file data in the storage
   let serializedSwap = swap.serialize();
-  Storage.set(stringToBytes(requestData.swapID), serializedSwap);
+  _increment();
+  Storage.set(stringToBytes(_currentSupply().toString()), serializedSwap);
   generateEvent('Swap was successfully opened');
   return stringToBytes('Swap was successfully opened');
 }
@@ -315,4 +310,18 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // return all infoirmations about Swap
   generateEvent(`${CurrentSwap.state.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
   return stringToBytes(`${CurrentSwap.state.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
+}
+
+export function currentSwap(): u64 {
+  generateEvent(Storage.get(counterKey)[0].toString());
+  return bytesToU64(Storage.get(counterKey))
+}
+
+function _increment(): void {
+  const currentID = bytesToU64(Storage.get(counterKey));
+  Storage.set(counterKey, u64ToBytes(currentID + 1));
+}
+
+function _currentSupply(): u64 {
+  return bytesToU64(Storage.get(counterKey));
 }
