@@ -13,10 +13,11 @@ import {
   bytesToStr,
   strToBytes,
   MassaCoin,
-  WalletClient,
+  WalletClient
 } from '@massalabs/massa-web3';
 import React from 'react';
 import { useState } from 'react';
+import { ethers } from "ethers";
 
 // Importing addresses and RPC
 const sc_addr = "A12bU14L7GM6doMLcQPVquHgYnnp4GY4YZRXe81MeS5dyUXmepqh"
@@ -275,7 +276,26 @@ function Content() {
   }
   async function handleSubmitOpen() {
     setDisabled({ ...disabled, open: true });
-    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, openState.secretLock)
+    // Creating random string and hash twice
+    function makeid(length: number) {
+      let result = '';
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const charactersLength = characters.length;
+      let counter = 0;
+      while (counter < length) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        counter += 1;
+      }
+      return result;
+    }
+    const random = makeid(100)
+    const randomInBytes = ethers.toUtf8Bytes(random)
+    const randomhash = ethers.sha256(randomInBytes)
+    console.log('your password : ', randomhash)
+    alert('your password : ' + randomhash)
+    const passwordInBytes = ethers.toUtf8Bytes(randomhash)
+    const hash = ethers.sha256(passwordInBytes)
+    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, hash)
     setopenInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)
@@ -285,7 +305,10 @@ function Content() {
   }
   async function handleSubmitClose() {
     setDisabled({ ...disabled, close: true });
-    const result = await funcClose(closeState.swapID, closeState.secretKey)
+
+    const secretKeyInBytes = ethers.toUtf8Bytes(closeState.secretKey);
+    const hash = ethers.sha256(secretKeyInBytes)
+    const result = await funcClose(closeState.swapID, hash)
     setcloseInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)
