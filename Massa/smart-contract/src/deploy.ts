@@ -29,9 +29,9 @@ const __dirname = path.dirname(path.dirname(__filename));
     [
       {
         data: readFileSync(path.join(__dirname, 'build', 'main.wasm')),
-        coins: new MassaCoin(10),
+        coins: new MassaCoin(0.1),
         args: new Args().addString('Test'),
-      } as ISCData,
+      } as unknown as ISCData,
     ],
     0,
     4_200_000_000,

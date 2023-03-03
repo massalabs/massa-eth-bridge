@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@massalabs/massa-web3": "^1.15.0",
+    "@massalabs/massa-web3": "^1.15.2-dev",
     "ethers": "^6.0.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

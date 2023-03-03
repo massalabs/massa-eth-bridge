@@ -17,10 +17,11 @@ import {
 } from '@massalabs/massa-web3';
 import React from 'react';
 import { useState } from 'react';
-import { ethers } from "ethers";
+import { ethers, toUtf8Bytes } from "ethers";
 
 // Importing addresses and RPC
 const sc_addr = "A12bU14L7GM6doMLcQPVquHgYnnp4GY4YZRXe81MeS5dyUXmepqh"
+const VITE_JSON_RPC_URL_PUBLIC_main = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_main;
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
@@ -102,10 +103,10 @@ function Content() {
   }
 
   // Starting to Close Swap
-  async function funcClose(swapID: string, secretKey: string) {
+  async function funcClose(swapID: string, secretKey: Uint8Array) {
     let args = new Args();
     args.addString(swapID);
-    args.addString(secretKey);
+    args.addUint8Array(secretKey);
     if (web3client && base_account) {
       // Sending tx to close function with all parameter
       const tx = await web3client.smartContracts().callSmartContract({
@@ -301,9 +302,8 @@ function Content() {
   async function handleSubmitClose() {
     setDisabled({ ...disabled, close: true });
 
-    const secretKeyInBytes = ethers.toUtf8Bytes(closeState.secretKey);
-    const hash = ethers.sha256(secretKeyInBytes)
-    const result = await funcClose(closeState.swapID, hash)
+    const secretKeyInBytes = toUtf8Bytes(closeState.secretKey);
+    const result = await funcClose(closeState.swapID, secretKeyInBytes)
     setcloseInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)

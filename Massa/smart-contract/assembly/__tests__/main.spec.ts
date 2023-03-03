@@ -1,7 +1,7 @@
 import { Args, bytesToString, stringToBytes } from '@massalabs/as-types';
 import { currentSwap, event, expire, SWAP, swap } from '../contracts/main';
 import { open, close } from '../contracts/main';
-import { Storage } from '@massalabs/massa-as-sdk';
+import { sha256, Storage } from '@massalabs/massa-as-sdk';
 
 describe('Group test', () => {
   test('Testing event', () => {
@@ -35,7 +35,7 @@ describe('Close swap test', () => {
             .add(10 as u64)
             .add(40 as u64)
             .add('ox345266')
-            .add('secretKey')
+            .add(sha256(stringToBytes('secretKey')).toString())
             .serialize(),
         ),
       ),
@@ -57,7 +57,7 @@ describe('Close swap test', () => {
             .add(10 as u64)
             .add(40 as u64)
             .add('ox345266')
-            .add('secretKey')
+            .add(sha256(stringToBytes('secretKey')).toString())
             .serialize(),
         ),
       ),
