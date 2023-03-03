@@ -20,8 +20,7 @@ import { useState } from 'react';
 import { ethers, toUtf8Bytes } from "ethers";
 
 // Importing addresses and RPC
-const sc_addr = "A12bU14L7GM6doMLcQPVquHgYnnp4GY4YZRXe81MeS5dyUXmepqh"
-const VITE_JSON_RPC_URL_PUBLIC_main = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_main;
+const sc_addr = "AS1iDRdk6m7vSWL2X6tgGHXJRCMBuAPcDhHzjXMogxSnkbNTGCuA"
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
