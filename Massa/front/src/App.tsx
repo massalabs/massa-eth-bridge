@@ -21,15 +21,10 @@ import { ethers } from "ethers";
 
 // Importing addresses and RPC
 const sc_addr = "A12bU14L7GM6doMLcQPVquHgYnnp4GY4YZRXe81MeS5dyUXmepqh"
-const VITE_JSON_RPC_URL_PUBLIC_main = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_main;
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
 const options = [
-  {
-    label: "mainnet",
-    value: VITE_JSON_RPC_URL_PUBLIC_main,
-  },
   {
     label: "testnet",
     value: VITE_JSON_RPC_URL_PUBLIC_test,
@@ -47,7 +42,7 @@ function Content() {
   const [base_account, setAccount] = useState<IAccount | null>(null);
   const [wallet, setwallet] = useState({
     secret: "",
-    RPC: VITE_JSON_RPC_URL_PUBLIC_main,
+    RPC: VITE_JSON_RPC_URL_PUBLIC_test,
   })
   const [swaps, setSwaps] = useState<string[][]>([]);
 
