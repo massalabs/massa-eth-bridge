@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { ethers, toUtf8Bytes } from "ethers";
 
 // Importing addresses and RPC
-const sc_addr = "AS1iDRdk6m7vSWL2X6tgGHXJRCMBuAPcDhHzjXMogxSnkbNTGCuA"
+const sc_addr = "AS12vsfUEXE1CcPawGHWY6VyKrkC5UgLRhETtdexcdeHnxVYzetFp"
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
@@ -81,7 +81,7 @@ function Content() {
   async function funcOpen(timeLock: number, massaValue: number, withdrawTrader: string, secretLock: string) {
     let args = new Args();
     args.addU64(BigInt(timeLock));
-    args.addU64(BigInt(massaValue))
+    args.addU64(BigInt(massaValue*1e9))
     args.addString(withdrawTrader);
     args.addString(secretLock);
     if (web3client && base_account) {
@@ -89,7 +89,7 @@ function Content() {
       const tx = await web3client.smartContracts().callSmartContract({
         fee: 0,
         maxGas: 1000000000,
-        coins: new MassaCoin(0.1),
+        coins: new MassaCoin(massaValue),
         targetAddress: sc_addr,
         functionName: "open",
         parameter: args.serialize()
@@ -196,8 +196,7 @@ function Content() {
   const [openState, setopenState] = useState({
     timeLock: 0,
     massaValue: 0,
-    withdrawTrader: "",
-    secretLock: ""
+    withdrawTrader: ""
   })
   const [closeState, setcloseState] = useState({
     swapID: "",
@@ -383,8 +382,6 @@ function Content() {
           <input type="number" name="massaValue" value={openState.massaValue} onChange={handleChangeOpen} />
           <label htmlFor="withdrawTrader">withdrawTrader : </label>
           <input type="text" name="withdrawTrader" value={openState.withdrawTrader} onChange={handleChangeOpen} />
-          <label htmlFor="secretLock">secretLock : </label>
-          <input type="text" name="secretLock" value={openState.secretLock} onChange={handleChangeOpen} />
           <button onClick={handleSubmitOpen} disabled={disabled.open}>open</button>
           <p>Result : {openInfo}</p>
         </div>

@@ -170,12 +170,14 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     .nextSerializable<OpenSwapRequest>()
     .expect("Can't deserialize OpenSwapRequest in open function");
 
-  //let coinCallerSend = transferedCoins()
-  //if (coinCallerSend != requestData.massaValue) {
-  //  return stringToBytes('Coins send by Caller no corresponding with massaValue');
-  //}
+  // Verifying coins transfered by calller and the value given
+  let coinCallerSend = transferedCoins()
+  if (coinCallerSend != requestData.massaValue) {
+    generateEvent(`Coins send by Caller no corresponding with massaValue ${coinCallerSend} and ${requestData.massaValue}`);
+    return stringToBytes('Coins send by Caller no corresponding with massaValue');
+  }
 
-  //initiating swap with data given by caller
+  // initiating swap with data given by caller
   let swap = new SWAP(
     'OPEN',
     timestamp() + requestData.timeLock,
@@ -228,10 +230,6 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     return stringToBytes('Wrong secretkey for this swap');
   }
 
-  //const target = new Address();
-  //target._value = NewSwap.withdrawTrader;
-  //transferCoins(target, NewSwap.massaValue);
-
   // changing Swap states
   NewSwap.state = 'CLOSE';
   NewSwap.secretKey = bytesToString(requestData.secretKey);
@@ -239,6 +237,15 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // set the file data in the storage
   const serializedNewSwap = NewSwap.serialize();
   Storage.set(stringToBytes(requestData.swapID), serializedNewSwap);
+
+  // sending coin to withdrawer
+  const target = new Address(NewSwap.withdrawTrader);
+  if (target.toString() !== NewSwap.withdrawTrader) {
+    generateEvent('Error with Address');
+    return stringToBytes('Error with Address');
+  }
+  transferCoins(target, NewSwap.massaValue);
+
   generateEvent('Swap closed');
   return stringToBytes('Swap closed');
 }
@@ -274,9 +281,9 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     return stringToBytes('Wrong timeLock for this swap');
   }
 
-  //const target = new Address();
-  //target._value = NewSwap.trader;
-  //transferCoins(target, NewSwap.massaValue);
+  // sending coin to initialiser
+  const target = new Address(NewSwap.trader);
+  transferCoins(target, NewSwap.massaValue);
 
   // changing Swap states
   NewSwap.state = 'EXPIRED';
