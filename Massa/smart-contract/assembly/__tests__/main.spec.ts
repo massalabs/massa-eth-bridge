@@ -3,12 +3,6 @@ import { currentSwap, event, expire, SWAP, swap } from '../contracts/main';
 import { open, close } from '../contracts/main';
 import { sha256, Storage } from '@massalabs/massa-as-sdk';
 
-describe('Group test', () => {
-  test('Testing event', () => {
-    expect(event([])).toStrictEqual(stringToBytes("I'm an event!"));
-  });
-});
-
 describe('Open swap test', () => {
   test('Create swap', () => {
     expect(

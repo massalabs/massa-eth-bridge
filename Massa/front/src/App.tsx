@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { ethers } from "ethers";
 
 // Importing addresses and RPC
-const sc_addr = "AS17LKS23W8a6QqgcCFUZoq6vnDvBj8H5hfwaTmESAMmFivH65m4"
+const sc_addr = "AS1osvwT7KFeg3Kdn4pH78iAKJWHWRRWn663nVB4eemskZ8J4qAD"
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
@@ -48,7 +48,6 @@ function Content() {
 
   // Recovering Event of the tx
   async function DisplayEvent(opIds: string): Promise<string> {
-
     if (web3client) {
       // Waitting the end of deployment
       await web3client.smartContracts().awaitRequiredOperationStatus(opIds, EOperationStatus.FINAL);
@@ -275,20 +274,10 @@ function Content() {
     setBalance(balance!.final.rawValue().toNumber())
     setDisabled({ ...disabled, wallet: false });
   }
+
   async function handleSubmitOpen() {
     setDisabled({ ...disabled, open: true });
     // Creating random string and hash twice
-    function makeid(length: number) {
-      let result = '';
-      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      const charactersLength = characters.length;
-      let counter = 0;
-      while (counter < length) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-        counter += 1;
-      }
-      return result;
-    }
     const random = hexToBytes(makeid(100))
     const randomInBytes = new Uint8Array(random)
     const password = ethers.sha256(randomInBytes)
@@ -300,7 +289,16 @@ function Content() {
     const secretLock = new Uint8Array(hashInBytes)
 
     const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, secretLock.subarray(1))
-    setopenInfo("transaction sent and in process")
+    setopenInfo("processing transaction...")
+    /*
+    if (web3client && base_account) {
+      await web3client.smartContracts().awaitRequiredOperationStatus(result, EOperationStatus.FINAL);
+      await web3client.smartContracts().readSmartContract(0)
+      setopenInfo("transaction processed")
+    }else{
+      alert('Web3 client not initialized');
+    }*/
+
     // Getting events
     const display = await DisplayEvent(result)
     // Storing result
@@ -359,6 +357,18 @@ function Content() {
     }
     setSwaps(temporarySwaps)
     setDisabled({ ...disabled, wallet: false });
+  }
+
+  function makeid(length: number) {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    let counter = 0;
+    while (counter < length) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+      counter += 1;
+    }
+    return result;
   }
 
   return (
