@@ -83,6 +83,12 @@ function Content() {
     return bytes;
   }
 
+  function toHexString(byteArray: Iterable<unknown> | ArrayLike<unknown>) {
+    return Array.from(byteArray, function (byte) {
+      return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+    }).join('')
+  }
+
   // Starting to Open Swap
   async function funcOpen(timeLock: number, massaValue: number, withdrawTrader: string, secretLock: Uint8Array) {
     let args = new Args();
@@ -282,9 +288,9 @@ function Content() {
     const randomInBytes = new Uint8Array(random)
     const password = ethers.sha256(randomInBytes)
     console.log('your password : ', password)
-    alert('your password : '+ password)
+    alert('your password : ' + password)
 
-    const hash = ethers.sha256(new Uint8Array (hexToBytes(password)))
+    const hash = ethers.sha256(new Uint8Array(hexToBytes(password)))
     const hashInBytes = hexToBytes(hash)
     const secretLock = new Uint8Array(hashInBytes)
 
@@ -305,6 +311,7 @@ function Content() {
     setopenInfo(display)
     setDisabled({ ...disabled, open: false });
   }
+
   async function handleSubmitClose() {
     setDisabled({ ...disabled, close: true });
 
@@ -318,6 +325,7 @@ function Content() {
     setcloseInfo(display)
     setDisabled({ ...disabled, close: false });
   }
+
   async function handleSubmitSwap() {
     setDisabled({ ...disabled, get: true });
     const result = await funcGetSwapinfo(swapID)
@@ -331,6 +339,7 @@ function Content() {
     // Storing result
     setDisabled({ ...disabled, get: false });
   }
+
   async function handleSubmitExpire() {
     setDisabled({ ...disabled, expire: true });
     const result = await funcExpire(expireState.swapID)
@@ -341,19 +350,54 @@ function Content() {
     setexpireInfo(display)
     setDisabled({ ...disabled, expire: false });
   }
+
   async function handleSubmitOrderBook() {
     setDisabled({ ...disabled, wallet: true });
     const result = await listSwaps()
     let temporarySwaps = []
     for (let i = 1; i <= result; i++) {
       let infoSwap = await funcGetSwapinfo(i.toString())
-      let str1 = bytesToStr(infoSwap).replace(/[^\x20-\x7E]/g, '')
-      const str = str1.replace(',', '')
-      if (str.substr(0, 4) == 'OPEN') {
-        temporarySwaps.push([str.substr(0, 4), " ", str.substring(5, 6), " ", str.substring(6, str.length - 10), " ", str.substr(str.length - 5, 5), " ", str.substr(str.length - 10, 5)])
-      } else {
-        temporarySwaps.push([str.substr(0, 5), " ", str.substring(6, 7), " ", str.substring(7, str.length - 10), " ", str.substr(str.length - 5, 5), " ", str.substr(str.length - 10, 5)])
+
+
+      const age_decode = new Args(infoSwap);
+      let state = age_decode.nextString();
+      let timeLock = age_decode.nextU64()
+      let massaValue = age_decode.nextU64()
+      let trader = age_decode.nextString()
+      let withdrawTrader = age_decode.nextString()
+      let secretLock = age_decode.nextUint8Array()
+
+
+      console.log(state)
+      const time = Number(timeLock.toString())
+      const timeInSeconds = Math.floor(time / 1000);
+      const d = new Date(timeInSeconds);
+      const dateFormatted = `${d.getFullYear()}${(d.getMonth() + 1).toString().padStart(2, '0')}${d.getDate().toString().padStart(2, '0')}`;
+      console.log(d.toString())
+      const formattedmassaValue = (Number(massaValue) / 10**9).toLocaleString();
+      console.log(formattedmassaValue)
+      console.log(trader)
+      console.log(withdrawTrader)
+      console.log(toHexString(secretLock))
+
+
+
+      let infos = ['']
+      infos.push(state)
+      infos.push(d.toString())
+      infos.push(formattedmassaValue)
+      infos.push(trader)
+      infos.push(withdrawTrader)
+      infos.push(toHexString(secretLock))
+
+
+      if (state == 'CLOSE') {
+        console.log("test")
+        let secretKey = age_decode.nextUint8Array()
+        console.log(toHexString(secretKey))
+        infos.push(toHexString(secretKey))
       }
+      temporarySwaps.push(infos)
     }
     setSwaps(temporarySwaps)
     setDisabled({ ...disabled, wallet: false });
