@@ -17,10 +17,10 @@ import {
 } from '@massalabs/massa-web3';
 import React from 'react';
 import { useState } from 'react';
-import { ethers, toUtf8Bytes } from "ethers";
+import { ethers } from "ethers";
 
 // Importing addresses and RPC
-const sc_addr = "AS12vsfUEXE1CcPawGHWY6VyKrkC5UgLRhETtdexcdeHnxVYzetFp"
+const sc_addr = "AS17LKS23W8a6QqgcCFUZoq6vnDvBj8H5hfwaTmESAMmFivH65m4"
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
@@ -77,13 +77,20 @@ function Content() {
     return ('Web3client not initialized')
   }
 
+  function hexToBytes(hex: string) {
+    let bytes = [];
+    for (let c = 0; c < hex.length; c += 2)
+      bytes.push(parseInt(hex.substr(c, 2), 16));
+    return bytes;
+  }
+
   // Starting to Open Swap
-  async function funcOpen(timeLock: number, massaValue: number, withdrawTrader: string, secretLock: string) {
+  async function funcOpen(timeLock: number, massaValue: number, withdrawTrader: string, secretLock: Uint8Array) {
     let args = new Args();
     args.addU64(BigInt(timeLock));
-    args.addU64(BigInt(massaValue*1e9))
+    args.addU64(BigInt(massaValue * 1e9))
     args.addString(withdrawTrader);
-    args.addString(secretLock);
+    args.addUint8Array(secretLock);
     if (web3client && base_account) {
       // Sending tx to open function with all parameter
       const tx = await web3client.smartContracts().callSmartContract({
@@ -282,14 +289,17 @@ function Content() {
       }
       return result;
     }
-    const random = makeid(100)
-    const randomInBytes = ethers.toUtf8Bytes(random)
-    const randomhash = ethers.sha256(randomInBytes)
-    console.log('your password : ', randomhash)
-    alert('your password : ' + randomhash)
-    const passwordInBytes = ethers.toUtf8Bytes(randomhash)
-    const hash = ethers.sha256(passwordInBytes)
-    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, hash)
+    const random = hexToBytes(makeid(100))
+    const randomInBytes = new Uint8Array(random)
+    const password = ethers.sha256(randomInBytes)
+    console.log('your password : ', password)
+    alert('your password : '+ password)
+
+    const hash = ethers.sha256(new Uint8Array (hexToBytes(password)))
+    const hashInBytes = hexToBytes(hash)
+    const secretLock = new Uint8Array(hashInBytes)
+
+    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, secretLock.subarray(1))
     setopenInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)
@@ -300,8 +310,9 @@ function Content() {
   async function handleSubmitClose() {
     setDisabled({ ...disabled, close: true });
 
-    const secretKeyInBytes = toUtf8Bytes(closeState.secretKey);
-    const result = await funcClose(closeState.swapID, secretKeyInBytes)
+    const secretKeyInBytes = hexToBytes(closeState.secretKey);
+    const finale = new Uint8Array(secretKeyInBytes)
+    const result = await funcClose(closeState.swapID, finale)
     setcloseInfo("transaction sent and in process")
     // Getting events
     const display = await DisplayEvent(result)

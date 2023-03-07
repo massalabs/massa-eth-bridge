@@ -1,164 +1,20 @@
-// The entry file of your WebAssembly module.
 import { Storage, generateEvent, Address, transferCoins, sha256 } from '@massalabs/massa-as-sdk';
-import { Args, bytesToString, bytesToU64, Result, Serializable, stringToBytes, toBytes, u64ToBytes } from '@massalabs/as-types';
+import { Args, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
 import { timestamp, transactionCreator, transferedCoins } from '@massalabs/massa-as-sdk/assembly/std/context';
 
+import { SWAP } from './types';
+import { CloseSwapRequest, ExpireSwapRequest, OpenSwapRequest, SwapRequest } from './requests';
+
 export const counterKey = stringToBytes('Counter');
-export const initCounter = 0;
 
 export function constructor(): void {
-  Storage.set(counterKey, u64ToBytes(initCounter));
+  Storage.set(counterKey, u64ToBytes(0));
 }
 
 export function event(_: StaticArray<u8>): StaticArray<u8> {
   const message = "I'm an event!";
   generateEvent(message);
   return stringToBytes(message);
-}
-
-// define class SWAP
-export class SWAP implements Serializable {
-  constructor(
-    public state: string = 'INVALID',
-    public timeLock: u64 = 0,
-    public massaValue: u64 = 0,
-    public trader: string = '',
-    public withdrawTrader: string = '',
-    public secretLock: string = '',
-    public secretKey: string = '',
-  ) { }
-
-  public serialize(): StaticArray<u8> {
-    const args = new Args();
-    args.add(this.state);
-    args.add(this.timeLock);
-    args.add(this.massaValue);
-    args.add(this.trader);
-    args.add(this.withdrawTrader);
-    args.add(this.secretLock);
-    return args.serialize();
-  }
-
-  public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
-    const args = new Args(data, offset);
-    this.state = args.nextString().expect("Can't deserialize SWAP.state");
-    this.timeLock = args.nextU64().expect("Can't deserialize SWAP.timeLock");
-    this.massaValue = args
-      .nextU64()
-      .expect("Can't deserialize SWAP.massaValue");
-    this.trader = args
-      .nextString()
-      .expect("Can't deserialize SWAP.trader");
-    this.withdrawTrader = args
-      .nextString()
-      .expect("Can't deserialize SWAP.withdrawTrader");
-    this.secretLock = args
-      .nextString()
-      .expect("Can't deserialize SWAP.secretLock");
-
-    return new Result(args.offset);
-  }
-}
-
-// define class OpenSwapRequest to work with open function
-export class OpenSwapRequest implements Serializable {
-  constructor(
-    public timeLock: u64 = 0,
-    public massaValue: u64 = 0,
-    public withdrawTrader: string = '',
-    public secretLock: string = '',
-  ) { }
-
-  public serialize(): StaticArray<u8> {
-    const args = new Args();
-    args.add(this.timeLock);
-    args.add(this.massaValue);
-    args.add(this.withdrawTrader);
-    args.add(this.secretLock);
-    return args.serialize();
-  }
-
-  public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
-    const args = new Args(data, offset);
-    this.timeLock = args
-      .nextU64()
-      .expect("Can't deserialize OpenSwapRequest.timeLock");
-    this.massaValue = args
-      .nextU64()
-      .expect("Can't deserialize OpenSwapRequest.massaValue");
-    this.withdrawTrader = args
-      .nextString()
-      .expect("Can't deserialize OpenSwapRequest.withdrawTrader");
-    this.secretLock = args
-      .nextString()
-      .expect("Can't deserialize OpenSwapRequest.secretLock");
-
-    return new Result(args.offset);
-  }
-}
-
-// define class CloseSwapRequest to work with close function
-export class CloseSwapRequest implements Serializable {
-  constructor(public swapID: string = '', public secretKey: StaticArray<u8> = []) { }
-
-  public serialize(): StaticArray<u8> {
-    const args = new Args();
-    args.add(this.swapID);
-    args.add(this.secretKey);
-    return args.serialize();
-  }
-
-  public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
-    const args = new Args(data, offset);
-    this.swapID = args
-      .nextString()
-      .expect("Can't deserialize CloseSwapRequest.swapID");
-    this.secretKey = args
-      .nextBytes()
-      .expect("Can't deserialize CloseSwapRequest.secretKey");
-
-    return new Result(args.offset);
-  }
-}
-
-// define class ExpireSwapRequest to work with expire function
-export class ExpireSwapRequest implements Serializable {
-  constructor(public swapID: string = '') { }
-
-  public serialize(): StaticArray<u8> {
-    const args = new Args();
-    args.add(this.swapID);
-    return args.serialize();
-  }
-
-  public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
-    const args = new Args(data, offset);
-    this.swapID = args
-      .nextString()
-      .expect("Can't deserialize ExpireSwapRequest.swapID");
-
-    return new Result(args.offset);
-  }
-}
-
-// define class SwapRequest to work with expire function
-export class SwapRequest implements Serializable {
-  constructor(public swapID: string = '') { }
-
-  public serialize(): StaticArray<u8> {
-    const args = new Args();
-    args.add(this.swapID);
-    return args.serialize();
-  }
-
-  public deserialize(data: StaticArray<u8>, offset: i32 = 0): Result<i32> {
-    const args = new Args(data, offset);
-    this.swapID = args
-      .nextString()
-      .expect("Can't deserialize SwapRequest.swapID");
-
-    return new Result(args.offset);
-  }
 }
 
 // opening SWAP with severale informations
@@ -170,10 +26,9 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     .nextSerializable<OpenSwapRequest>()
     .expect("Can't deserialize OpenSwapRequest in open function");
 
-  // Verifying coins transfered by calller and the value given
-  let coinCallerSend = transferedCoins()
-  if (coinCallerSend != requestData.massaValue) {
-    generateEvent(`Coins send by Caller no corresponding with massaValue ${coinCallerSend} and ${requestData.massaValue}`);
+  // verifying coins transfered by calller and the value given
+  if (transferedCoins() != requestData.massaValue) {
+    generateEvent(`Coins send by Caller no corresponding with massaValue ${transferedCoins()} and ${requestData.massaValue}`);
     return stringToBytes('Coins send by Caller no corresponding with massaValue');
   }
 
@@ -187,10 +42,10 @@ export function open(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     requestData.secretLock,
   );
 
-  // set the file data in the storage
+  // setting the file data in the storage
   let serializedSwap = swap.serialize();
   _increment();
-  Storage.set(stringToBytes(_currentSupply().toString()), serializedSwap);
+  Storage.set(stringToBytes(_currentCounter().toString()), serializedSwap);
   generateEvent('Swap was successfully opened');
   return stringToBytes('Swap was successfully opened');
 }
@@ -206,7 +61,7 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
       "Can't deserialize CloseSwapRequest in close function",
     );
 
-  // search for a swap with swapID
+  // searching swap with swapID
   const swapExists = Storage.has(requestData.swapID);
   if (!swapExists) {
     generateEvent('Swap not exists');
@@ -216,35 +71,37 @@ export function close(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // finding Swap with swapID
   const storedSwap = Storage.get(stringToBytes(requestData.swapID));
   // initiating swap with data find
-  const NewSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
+  const updateSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
 
   // ... if Swap not open, return (Swap not open)
-  if (NewSwap.state != 'OPEN') {
+  if (updateSwap.state != 'OPEN') {
     generateEvent('Swap not open');
     return stringToBytes('Swap not open');
   }
-  const shaSecret = sha256(requestData.secretKey).toString()
+  const secretLockSent = sha256(requestData.secretKey)
   // ... if caller give wrong secretKey, return (Wrong secretkey for this swap)
-  if (NewSwap.secretLock != shaSecret) {
-    generateEvent('Wrong secretkey for this swap');
-    return stringToBytes('Wrong secretkey for this swap');
+  for (let i = 0; i < secretLockSent.length; i++) {
+    if (updateSwap.secretLock[i] != secretLockSent[i]) {
+      generateEvent(`Wrong secretkey for this swap`);
+      return stringToBytes('Wrong secretkey for this swap');
+    }
   }
 
   // changing Swap states
-  NewSwap.state = 'CLOSE';
-  NewSwap.secretKey = bytesToString(requestData.secretKey);
+  updateSwap.state = 'CLOSE';
+  updateSwap.secretKey = requestData.secretKey;
 
-  // set the file data in the storage
-  const serializedNewSwap = NewSwap.serialize();
-  Storage.set(stringToBytes(requestData.swapID), serializedNewSwap);
+  // setting the file data in the storage
+  const serializedUpdateSwap = updateSwap.serialize();
+  Storage.set(stringToBytes(requestData.swapID), serializedUpdateSwap);
 
   // sending coin to withdrawer
-  const target = new Address(NewSwap.withdrawTrader);
-  if (target.toString() !== NewSwap.withdrawTrader) {
+  const target = new Address(updateSwap.withdrawTrader);
+  if (target.toString() !== updateSwap.withdrawTrader) {
     generateEvent('Error with Address');
     return stringToBytes('Error with Address');
   }
-  transferCoins(target, NewSwap.massaValue);
+  transferCoins(target, updateSwap.massaValue);
 
   generateEvent('Swap closed');
   return stringToBytes('Swap closed');
@@ -258,7 +115,7 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     .nextSerializable<ExpireSwapRequest>()
     .expect("Can't deserialize ExpireSwapRequest from giben argument");
 
-  // search for a swap with swapID
+  // searching swap with swapID
   const swapExists = Storage.has(requestData.swapID);
   if (!swapExists) {
     generateEvent('Swap not exists');
@@ -268,29 +125,30 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // finding Swap with swapID
   const storedSwap = Storage.get(stringToBytes(requestData.swapID));
   // initiating swap with data find
-  const NewSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
+  const updateSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
 
   // ... if Swap not open, return (Swap not open)
-  if (NewSwap.state != 'OPEN') {
+  if (updateSwap.state != 'OPEN') {
     generateEvent('Swap not open');
     return stringToBytes('Swap not open');
   }
   // ... if timeLock are  not expired, return (Wrong timeLock for this swap)
-  if (NewSwap.timeLock > timestamp()) {
+  if (updateSwap.timeLock > timestamp()) {
     generateEvent('Wrong timeLock for this swap');
     return stringToBytes('Wrong timeLock for this swap');
   }
 
-  // sending coin to initialiser
-  const target = new Address(NewSwap.trader);
-  transferCoins(target, NewSwap.massaValue);
-
   // changing Swap states
-  NewSwap.state = 'EXPIRED';
+  updateSwap.state = 'EXPIRED';
 
-  // set the file data in the storage
-  const serializedNewSwap = NewSwap.serialize();
-  Storage.set(stringToBytes(requestData.swapID), serializedNewSwap);
+  // setting the file data in the storage
+  const serializedUpdateSwap = updateSwap.serialize();
+  Storage.set(stringToBytes(requestData.swapID), serializedUpdateSwap);
+
+  // sending coin to initialiser
+  const target = new Address(updateSwap.trader);
+  transferCoins(target, updateSwap.massaValue);
+
   generateEvent('Swap expired');
   return stringToBytes('Swap expired');
 }
@@ -303,7 +161,7 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
     .nextSerializable<SwapRequest>()
     .expect("Can't deserialize ExpireSwapRequest from giben argument");
 
-  // search for a swap with swapID
+  // searching swap with swapID
   const swapExists = Storage.has(requestData.swapID);
   if (!swapExists) {
     generateEvent('Swap not exists');
@@ -313,11 +171,11 @@ export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // finding Swap with swapID
   const storedSwap = Storage.get(stringToBytes(requestData.swapID));
   // initiating swap with data find
-  const CurrentSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
+  const currentSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
 
-  // return all infoirmations about Swap
-  generateEvent(`${CurrentSwap.state.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
-  return stringToBytes(`${CurrentSwap.state.toString()}, ${CurrentSwap.secretLock.toString()}, ${CurrentSwap.secretKey.toString()}`);
+  // returning all informations about Swap
+  generateEvent(`${currentSwap.state.toString()}, ${currentSwap.secretLock.toString()}, ${currentSwap.secretKey.toString()}`);
+  return stringToBytes(`${currentSwap.state.toString()}, ${currentSwap.secretLock.toString()}, ${currentSwap.secretKey.toString()}`);
 }
 
 export function currentSwap(): u64 {
@@ -326,10 +184,9 @@ export function currentSwap(): u64 {
 }
 
 function _increment(): void {
-  const currentID = bytesToU64(Storage.get(counterKey));
-  Storage.set(counterKey, u64ToBytes(currentID + 1));
+  Storage.set(counterKey, u64ToBytes(bytesToU64(Storage.get(counterKey)) + 1));
 }
 
-function _currentSupply(): u64 {
+function _currentCounter(): u64 {
   return bytesToU64(Storage.get(counterKey));
 }
