@@ -22,6 +22,7 @@ export class SWAP implements Serializable {
         args.add(this.trader);
         args.add(this.withdrawTrader);
         args.add(this.secretLock);
+        args.add(this.secretKey);
         return args.serialize();
     }
 
@@ -41,6 +42,9 @@ export class SWAP implements Serializable {
         this.secretLock = args
             .nextBytes()
             .expect("Can't deserialize SWAP.secretLock");
+        this.secretKey = args
+            .nextBytes()
+            .expect("Can't deserialize SWAP.secretKey");
 
         return new Result(args.offset);
     }
