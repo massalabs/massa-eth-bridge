@@ -18,6 +18,7 @@ import {
 import React from 'react';
 import { useState } from 'react';
 import { ethers } from "ethers";
+import './App.css'
 
 // Importing addresses and RPC
 const sc_addr = "AS1osvwT7KFeg3Kdn4pH78iAKJWHWRRWn663nVB4eemskZ8J4qAD"
@@ -356,10 +357,8 @@ function Content() {
     const result = await listSwaps()
     let temporarySwaps = []
     for (let i = 1; i <= result; i++) {
-      let infoSwap = await funcGetSwapinfo(i.toString())
-
-
-      const age_decode = new Args(infoSwap);
+      let infosSwap = await funcGetSwapinfo(i.toString())
+      const age_decode = new Args(infosSwap);
       let state = age_decode.nextString();
       let timeLock = age_decode.nextU64()
       let massaValue = age_decode.nextU64()
@@ -367,20 +366,10 @@ function Content() {
       let withdrawTrader = age_decode.nextString()
       let secretLock = age_decode.nextUint8Array()
 
-
-      console.log(state)
       const time = Number(timeLock.toString())
       const timeInSeconds = Math.floor(time / 1000);
       const d = new Date(timeInSeconds);
-      const dateFormatted = `${d.getFullYear()}${(d.getMonth() + 1).toString().padStart(2, '0')}${d.getDate().toString().padStart(2, '0')}`;
-      console.log(d.toString())
       const formattedmassaValue = (Number(massaValue) / 10**9).toLocaleString();
-      console.log(formattedmassaValue)
-      console.log(trader)
-      console.log(withdrawTrader)
-      console.log(toHexString(secretLock))
-
-
 
       let infos = ['']
       infos.push(state)
@@ -389,13 +378,11 @@ function Content() {
       infos.push(trader)
       infos.push(withdrawTrader)
       infos.push(toHexString(secretLock))
-
-
       if (state == 'CLOSE') {
-        console.log("test")
         let secretKey = age_decode.nextUint8Array()
-        console.log(toHexString(secretKey))
         infos.push(toHexString(secretKey))
+      }else {
+        infos.push("??????????????????????????????????????????????????????????????????")
       }
       temporarySwaps.push(infos)
     }
@@ -481,10 +468,24 @@ function Content() {
               <table>
                 <tbody>
                   <tr>
-                    <th scope="col">swap {index + 1}:</th>
+                    <th scope="col">swapID</th>
+                    <th scope="col">status</th>
+                    <th scope="col">timeLock</th>
+                    <th scope="col">massaValue</th>
+                    <th scope="col">trader</th>
+                    <th scope="col">withdrawTrader</th>
+                    <th scope="col">secretLock</th>
+                    <th scope="col">secretKey</th>
                   </tr>
                   <tr>
-                    <td>{item}</td>
+                    <td>{index + 1}</td>
+                    <td>{item[1]}</td>
+                    <td>{item[2]}</td>
+                    <td>{item[3]}</td>
+                    <td>{item[4]}</td>
+                    <td>{item[5]}</td>
+                    <td>{item[6]}</td>
+                    <td>{item[7]}</td>
                   </tr>
                 </tbody>
               </table>
