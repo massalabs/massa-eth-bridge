@@ -21,7 +21,7 @@ import { ethers } from "ethers";
 import './App.css'
 
 // Importing addresses and RPC
-const sc_addr = "AS1osvwT7KFeg3Kdn4pH78iAKJWHWRRWn663nVB4eemskZ8J4qAD"
+const sc_addr = "AS12MomQsKoM5MuYMVqg8fCQcd75t4MazzDLc2tj9YFzURkQFEdGF"
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
@@ -220,7 +220,7 @@ function Content() {
   })
   const [swapID, setswapID] = useState('');
   // Creating variables to store SC output
-  const [swapIDInfo, setswapIDInfo] = useState(['']);
+  const [swapIDInfo, setswapIDInfo] = useState('');
   const [openInfo, setopenInfo] = useState('');
   const [closeInfo, setcloseInfo] = useState('');
   const [expireInfo, setexpireInfo] = useState('');
@@ -288,10 +288,11 @@ function Content() {
     const random = hexToBytes(makeid(100))
     const randomInBytes = new Uint8Array(random)
     const password = ethers.sha256(randomInBytes)
-    console.log('your password : ', password)
-    alert('your password : ' + password)
 
     const hash = ethers.sha256(new Uint8Array(hexToBytes(password)))
+    console.log('your initial password : ', password)
+    console.log('your password : ', hash)
+    alert('your secret : ' + password + "and your hash secret :" + hash)
     const hashInBytes = hexToBytes(hash)
     const secretLock = new Uint8Array(hashInBytes)
 
@@ -329,15 +330,36 @@ function Content() {
 
   async function handleSubmitSwap() {
     setDisabled({ ...disabled, get: true });
-    const result = await funcGetSwapinfo(swapID)
-    const str1 = bytesToStr(result).replace(/[^\x20-\x7E]/g, '')
-    const str = str1.replace(',', '')
-    if (str.substr(0, 4) == 'OPEN') {
-      setswapIDInfo([str.substr(0, 4), str.substring(5, 6), str.substring(6, str.length - 10), str.substr(str.length - 5, 5), str.substr(str.length - 10, 5)])
+    const infosSwap = await funcGetSwapinfo(swapID)
+    const age_decode = new Args(infosSwap);
+    let state = age_decode.nextString();
+    let timeLock = age_decode.nextU64()
+    let massaValue = age_decode.nextU64()
+    let trader = age_decode.nextString()
+    let withdrawTrader = age_decode.nextString()
+    let secretLock = age_decode.nextUint8Array()
+
+    const time = Number(timeLock.toString())
+    const timeInSeconds = Math.floor(time / 1000);
+    const d = new Date(timeInSeconds);
+    const formattedmassaValue = (Number(massaValue) / 10 ** 9).toLocaleString();
+
+    let infos = ['']
+    infos.push(state)
+    infos.push(d.toString())
+    infos.push(formattedmassaValue)
+    infos.push(trader)
+    infos.push(withdrawTrader)
+    infos.push("ox" + toHexString(secretLock))
+    if (state == 'CLOSE') {
+      let secretKey = age_decode.nextUint8Array()
+      infos.push("ox" + toHexString(secretKey).substring(2))
     } else {
-      setswapIDInfo([str.substr(0, 5), str.substring(6, 7), str.substring(7, str.length - 10), str.substr(str.length - 5, 5), str.substr(str.length - 10, 5)])
+      infos.push("NOT PUBLIC")
     }
+    
     // Storing result
+    setswapIDInfo(`status : ${infos[1]} timeLock : ${infos[2]} massaValue : ${infos[3]} trader : ${infos[4]} withdrawTrader : ${infos[5]} secretLock : ${infos[6]} secretKey : ${infos[7]}`)
     setDisabled({ ...disabled, get: false });
   }
 
@@ -369,7 +391,7 @@ function Content() {
       const time = Number(timeLock.toString())
       const timeInSeconds = Math.floor(time / 1000);
       const d = new Date(timeInSeconds);
-      const formattedmassaValue = (Number(massaValue) / 10**9).toLocaleString();
+      const formattedmassaValue = (Number(massaValue) / 10 ** 9).toLocaleString();
 
       let infos = ['']
       infos.push(state)
@@ -377,12 +399,12 @@ function Content() {
       infos.push(formattedmassaValue)
       infos.push(trader)
       infos.push(withdrawTrader)
-      infos.push(toHexString(secretLock))
+      infos.push("ox" + toHexString(secretLock))
       if (state == 'CLOSE') {
         let secretKey = age_decode.nextUint8Array()
-        infos.push(toHexString(secretKey))
-      }else {
-        infos.push("??????????????????????????????????????????????????????????????????")
+        infos.push("ox" + toHexString(secretKey).substring(2))
+      } else {
+        infos.push("NOT PUBLIC")
       }
       temporarySwaps.push(infos)
     }

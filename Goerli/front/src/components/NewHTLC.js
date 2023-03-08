@@ -12,6 +12,7 @@ const NewHTLC = () => {
     const receiverRef = React.useRef();
     const timelockRef = React.useRef();
     const amountRef = React.useRef();
+    const passwordRef = React.useRef();
     const allowanceRef = React.useRef();
 
     // Creating variable to store smart contract infomration
@@ -74,13 +75,15 @@ const NewHTLC = () => {
             }
             return result;
         }
-        const random = makeid(100)
-        const randomInBytes = ethers.utils.toUtf8Bytes(random)
-        const randomhash = ethers.utils.sha256(randomInBytes)
-        console.log('your password : ', randomhash)
-        alert('your password : '+ randomhash)
-        const passwordInBytes = ethers.utils.toUtf8Bytes(randomhash)
-        const hash = ethers.utils.sha256(passwordInBytes)
+        //const random = makeid(100)
+        //const random = passwordRef.current.value
+        //const randomInBytes = ethers.utils.toUtf8Bytes(random)
+        //const randomhash = ethers.utils.sha256(randomInBytes)
+        //alert('your password : '+ randomhash)
+        //const passwordInBytes = ethers.utils.toUtf8Bytes(randomhash)
+        //const hash = ethers.utils.sha256(passwordInBytes)
+        const hash = passwordRef.current.value
+        console.log('your hash secret : ', hash)
 
         // Getting all swap in statut "OPEN". Selecting last ID and increment 1.
         const filterOpen = contract_SWAP_ERC20.filters.Open()
@@ -127,6 +130,10 @@ const NewHTLC = () => {
                     <div>
                         <label htmlFor="timelock">Timelock : </label>
                         <input id="timelock" type="number" ref={timelockRef} />
+                    </div>
+                    <div>
+                        <label htmlFor="password">password : </label>
+                        <input id="password" type="text" ref={passwordRef} />
                     </div>
                     <button type="submit">Create</button>
                 </form>
