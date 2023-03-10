@@ -10,7 +10,6 @@ import {
   IProvider,
   ProviderType,
   IDatastoreEntryInput,
-  bytesToStr,
   strToBytes,
   MassaCoin,
   WalletClient
