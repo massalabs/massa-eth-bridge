@@ -52,6 +52,15 @@ const Events = () => {
         await swapWithSigner.close(ID, secretKeyInString);
     };
 
+
+    // Running when form are submited
+    const handleSubmitClose = (ID) => async (event) => {
+        event.preventDefault();
+        const swapWithSigner = contract_SWAP_ERC20.connect(signer);
+        // Creating tx and send to expire swap
+        await swapWithSigner.expire(ID);
+    };
+
     // Runinng when component instantiating
     useEffect(() => {
         async function fetchSwaps() {
@@ -79,8 +88,15 @@ const Events = () => {
             const filterClose = contract_SWAP_ERC20.filters.Close()
             const logsClose = await contract_SWAP_ERC20.queryFilter(filterClose)
 
+            // Getting all swap in statut "EXPIRE"
+            const filterExpire = contract_SWAP_ERC20.filters.Expire()
+            const logsExpire = await contract_SWAP_ERC20.queryFilter(filterExpire)
+
             // Deleting swap in OPEN when swap in statut CLOSE exist with same secretKey
-            setSwap(compareAndRemove(logsOpen, logsClose))
+            const OpenAndExpire = compareAndRemove(logsOpen, logsClose)
+            // Deleting swap in OPEN when swap in statut EXPIRE exist with same secretKey
+            console.log(compareAndRemove(OpenAndExpire, logsExpire))
+            setSwap(compareAndRemove(OpenAndExpire, logsExpire))
         }
         fetchSwaps()
 
@@ -118,6 +134,11 @@ const Events = () => {
                                 <label>SecretKey</label>
                                 <input type="text" value={inputValues[index] || ''} onChange={handleInputChange(index)} />
                                 <button type="submit">Close</button>
+                            </div>
+                        </form>
+                        <form onSubmit={handleSubmitClose(item.args._swapID)}>
+                            <div>
+                                <button type="submit">Expire</button>
                             </div>
                         </form>
                     </div>
