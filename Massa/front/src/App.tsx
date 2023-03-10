@@ -209,7 +209,8 @@ function Content() {
   const [openState, setopenState] = useState({
     timeLock: 0,
     massaValue: 0,
-    withdrawTrader: ""
+    withdrawTrader: "",
+    password: ""
   })
   const [closeState, setcloseState] = useState({
     swapID: "",
@@ -290,11 +291,32 @@ function Content() {
     //Convert hex string to unint8array and hash it
     const lockString = ethers.sha256(new Uint8Array(hexToBytes(secret)));
 
-    //Concert hex string to unint8array and remove the 0x at the beginning
+    //Convert hex string to unint8array and remove the 0x at the beginning
     const lock = new Uint8Array(hexToBytes(lockString)).subarray(1);
     
     //Display secret to user
     alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: "+secret);
+
+    //Open the swap
+    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, lock)
+
+    setopenInfo("processing transaction...")
+
+    // Getting events
+    const display = await DisplayEvent(result)
+    // Storing result
+    setopenInfo(display)
+    setDisabled({ ...disabled, open: false });
+  }
+
+  async function handleSubmitOpenSame() {
+    setDisabled({ ...disabled, open: true });
+
+    //Convert hex string to unint8array and remove the 0x at the beginning
+    const lock = new Uint8Array(hexToBytes(openState.password)).subarray(1);
+    
+    //Display secret to user
+    alert("This is your secretLock.\nSecretLock: "+openState.password);
 
     //Open the swap
     const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, lock)
@@ -448,7 +470,10 @@ function Content() {
           <input type="number" name="massaValue" value={openState.massaValue} onChange={handleChangeOpen} />
           <label htmlFor="withdrawTrader">withdrawTrader : </label>
           <input type="text" name="withdrawTrader" value={openState.withdrawTrader} onChange={handleChangeOpen} />
-          <button onClick={handleSubmitOpen} disabled={disabled.open}>open</button>
+          <button onClick={handleSubmitOpen} disabled={disabled.open}>Create New Swap</button>
+          <label htmlFor="password">password : </label>
+          <input type="text" name="password" value={openState.password} onChange={handleChangeOpen} />
+          <button onClick={handleSubmitOpenSame} disabled={disabled.open}>Create the same swap as in Massa</button>
           <p>Result : {openInfo}</p>
         </div>
         <h2>Close Swap : </h2>
