@@ -333,9 +333,8 @@ function Content() {
     let withdrawTrader = age_decode.nextString()
     let secretLock = age_decode.nextUint8Array()
 
-    const time = Number(timeLock.toString())
-    const timeInSeconds = Math.floor(time / 1000);
-    const d = new Date(timeInSeconds);
+    const time = Number(timeLock)
+    const d = new Date(time);
     const formattedmassaValue = (Number(massaValue) / 10 ** 9).toLocaleString();
 
     let infos = ['']
