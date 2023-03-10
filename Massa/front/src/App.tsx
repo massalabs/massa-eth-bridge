@@ -21,7 +21,7 @@ import { ethers } from "ethers";
 import './App.css'
 
 // Importing addresses and RPC
-const sc_addr = "AS12MomQsKoM5MuYMVqg8fCQcd75t4MazzDLc2tj9YFzURkQFEdGF"
+const sc_addr = "AS1qUNsVzLDkcm1qL66XPrVtyki5B2omLtpajTYqPLJNA6ajNfwt"
 const VITE_JSON_RPC_URL_PUBLIC_test = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_test;
 const VITE_JSON_RPC_URL_PUBLIC_inno = import.meta.env.VITE_JSON_RPC_URL_PUBLIC_inno;
 
