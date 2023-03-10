@@ -344,10 +344,10 @@ function Content() {
     infos.push(formattedmassaValue)
     infos.push(trader)
     infos.push(withdrawTrader)
-    infos.push("ox" + toHexString(secretLock))
+    infos.push("0x" + toHexString(secretLock))
     if (state == 'CLOSE') {
       let secretKey = age_decode.nextUint8Array()
-      infos.push("ox" + toHexString(secretKey).substring(2))
+      infos.push("0x" + toHexString(secretKey).substring(2))
     } else {
       infos.push("NOT PUBLIC")
     }
