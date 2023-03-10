@@ -27,15 +27,29 @@ const Events = () => {
         setInputValues(updatedInputValues);
     };
 
+    function hexToBytes(hex) {
+        let bytes = [];
+        for (let c = 0; c < hex.length; c += 2)
+            bytes.push(parseInt(hex.substr(c, 2), 16));
+        return bytes;
+    }
+
+    function toHexString(byteArray) {
+        return Array.from(byteArray, function (byte) {
+          return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+        }).join('')
+      }
+
     // Running when form are submited
     const handleSubmit = (ID, index) => async (event) => {
         event.preventDefault();
 
         const secretKey = inputValues[index]
-        const secretKeyInBytes = ethers.utils.toUtf8Bytes(secretKey);
+        const secretKeyInBytes = new Uint8Array(hexToBytes(secretKey))
+        const secretKeyInString = "0x" + toHexString(secretKeyInBytes)
         const swapWithSigner = contract_SWAP_ERC20.connect(signer);
         // Creating tx and send to close swap
-        await swapWithSigner.close(ID, secretKeyInBytes);
+        await swapWithSigner.close(ID, secretKeyInString);
     };
 
     // Runinng when component instantiating
