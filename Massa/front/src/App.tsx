@@ -17,6 +17,7 @@ import {
 import React from 'react';
 import { useState } from 'react';
 import { ethers } from "ethers";
+import { randomBytes } from 'crypto'
 import './App.css'
 
 // Importing addresses and RPC
@@ -283,28 +284,22 @@ function Content() {
 
   async function handleSubmitOpen() {
     setDisabled({ ...disabled, open: true });
-    // Creating random string and hash twice
-    const random = hexToBytes(makeid(100))
-    const randomInBytes = new Uint8Array(random)
-    const password = ethers.sha256(randomInBytes)
+    // Creating random byte array and hash it
+    const secret = ethers.sha256(randomBytes(32));
 
-    const hash = ethers.sha256(new Uint8Array(hexToBytes(password)))
-    console.log('your initial password : ', password)
-    console.log('your password : ', hash)
-    alert('your secret : ' + password + "and your hash secret :" + hash)
-    const hashInBytes = hexToBytes(hash)
-    const secretLock = new Uint8Array(hashInBytes)
+    //Convert hex string to unint8array and hash it
+    const lockString = ethers.sha256(new Uint8Array(hexToBytes(secret)));
 
-    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, secretLock.subarray(1))
+    //Concert hex string to unint8array and remove the 0x at the beginning
+    const lock = new Uint8Array(hexToBytes(lockString)).subarray(1);
+    
+    //Display secret to user
+    alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: "+secret);
+
+    //Open the swap
+    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, lock)
+
     setopenInfo("processing transaction...")
-    /*
-    if (web3client && base_account) {
-      await web3client.smartContracts().awaitRequiredOperationStatus(result, EOperationStatus.FINAL);
-      await web3client.smartContracts().readSmartContract(0)
-      setopenInfo("transaction processed")
-    }else{
-      alert('Web3 client not initialized');
-    }*/
 
     // Getting events
     const display = await DisplayEvent(result)
