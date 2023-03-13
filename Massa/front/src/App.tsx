@@ -210,7 +210,7 @@ function Content() {
     timeLock: 0,
     massaValue: 0,
     withdrawTrader: "",
-    password: ""
+    secretLock: ""
   })
   const [closeState, setcloseState] = useState({
     swapID: "",
@@ -286,19 +286,19 @@ function Content() {
   async function handleSubmitOpen() {
     setDisabled({ ...disabled, open: true });
     // Creating random byte array and hash it
-    const secret = ethers.sha256(randomBytes(32));
+    const secretKey = ethers.sha256(randomBytes(32));
 
     // Convert hex string to unint8array and hash it
-    const lockString = ethers.sha256(new Uint8Array(hexToBytes(secret)));
+    const secretLockString = ethers.sha256(new Uint8Array(hexToBytes(secretKey)));
 
     // Convert hex string to unint8array and remove the 0x at the beginning
-    const lock = new Uint8Array(hexToBytes(lockString)).subarray(1);
+    const secretLock = new Uint8Array(hexToBytes(secretLockString)).subarray(1);
     
     // Display secret to user
-    alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: "+secret);
+    alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: "+secretKey);
 
     //Open the swap
-    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, lock)
+    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, secretLock)
 
     setopenInfo("processing transaction...")
 
@@ -313,13 +313,13 @@ function Content() {
     setDisabled({ ...disabled, open: true });
 
     // Convert hex string to unint8array and remove the 0x at the beginning
-    const lock = new Uint8Array(hexToBytes(openState.password)).subarray(1);
+    const secretLock = new Uint8Array(hexToBytes(openState.secretLock)).subarray(1);
     
     // Display secret to user
-    alert("This is your secretLock.\nSecretLock: "+openState.password);
+    alert("This is your secretLock.\nSecretLock: "+openState.secretLock);
 
     // Open the swap
-    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, lock)
+    const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, secretLock)
 
     setopenInfo("processing transaction...")
 
@@ -335,10 +335,10 @@ function Content() {
 
     // Convert hex string to unint8array
     const secretKeyInBytes = hexToBytes(closeState.secretKey);
-    const finale = new Uint8Array(secretKeyInBytes)
+    const secretKey = new Uint8Array(secretKeyInBytes)
 
     // Close the swap
-    const result = await funcClose(closeState.swapID, finale)
+    const result = await funcClose(closeState.swapID, secretKey)
 
     setcloseInfo("transaction sent and in process")
 
@@ -352,13 +352,13 @@ function Content() {
   async function handleSubmitSwap() {
     setDisabled({ ...disabled, get: true });
     const infosSwap = await funcGetSwapinfo(swapID)
-    const age_decode = new Args(infosSwap);
-    let state = age_decode.nextString();
-    let timeLock = age_decode.nextU64()
-    let massaValue = age_decode.nextU64()
-    let trader = age_decode.nextString()
-    let withdrawTrader = age_decode.nextString()
-    let secretLock = age_decode.nextUint8Array()
+    const infosSwap_decode = new Args(infosSwap);
+    let state = infosSwap_decode.nextString();
+    let timeLock = infosSwap_decode.nextU64()
+    let massaValue = infosSwap_decode.nextU64()
+    let trader = infosSwap_decode.nextString()
+    let withdrawTrader = infosSwap_decode.nextString()
+    let secretLock = infosSwap_decode.nextUint8Array()
 
     const time = Number(timeLock)
     const date = new Date(time);
@@ -372,7 +372,7 @@ function Content() {
     infos.push(withdrawTrader)
     infos.push("0x" + toHexString(secretLock))
     if (state == 'CLOSE') {
-      let secretKey = age_decode.nextUint8Array()
+      let secretKey = infosSwap_decode.nextUint8Array()
       infos.push("0x" + toHexString(secretKey).substring(2))
     } else {
       infos.push("NOT PUBLIC")
@@ -397,17 +397,17 @@ function Content() {
 
   async function handleSubmitOrderBook() {
     setDisabled({ ...disabled, wallet: true });
-    const result = await listSwaps()
-    let temporarySwaps = []
-    for (let i = 1; i <= result; i++) {
+    const currentSwap = await listSwaps()
+    let swaps = []
+    for (let i = 1; i <= currentSwap; i++) {
       let infosSwap = await funcGetSwapinfo(i.toString())
-      const age_decode = new Args(infosSwap);
-      let state = age_decode.nextString();
-      let timeLock = age_decode.nextU64()
-      let massaValue = age_decode.nextU64()
-      let trader = age_decode.nextString()
-      let withdrawTrader = age_decode.nextString()
-      let secretLock = age_decode.nextUint8Array()
+      const infosSwap_decode = new Args(infosSwap);
+      let state = infosSwap_decode.nextString();
+      let timeLock = infosSwap_decode.nextU64()
+      let massaValue = infosSwap_decode.nextU64()
+      let trader = infosSwap_decode.nextString()
+      let withdrawTrader = infosSwap_decode.nextString()
+      let secretLock = infosSwap_decode.nextUint8Array()
 
       const time = Number(timeLock)
       const d = new Date(time);
@@ -421,14 +421,14 @@ function Content() {
       infos.push(withdrawTrader)
       infos.push("0x" + toHexString(secretLock))
       if (state == 'CLOSE') {
-        let secretKey = age_decode.nextUint8Array()
+        let secretKey = infosSwap_decode.nextUint8Array()
         infos.push("0x" + toHexString(secretKey).substring(2))
       } else {
         infos.push("NOT PUBLIC")
       }
-      temporarySwaps.push(infos)
+      swaps.push(infos)
     }
-    setSwaps(temporarySwaps)
+    setSwaps(swaps)
     setDisabled({ ...disabled, wallet: false });
   }
 
@@ -465,9 +465,9 @@ function Content() {
           <label htmlFor="withdrawTrader">withdrawTrader : </label>
           <input type="text" name="withdrawTrader" value={openState.withdrawTrader} onChange={handleChangeOpen} />
           <button onClick={handleSubmitOpen} disabled={disabled.open}>Create New Swap</button>
-          <label htmlFor="password">password : </label>
-          <input type="text" name="password" value={openState.password} onChange={handleChangeOpen} />
-          <button onClick={handleSubmitOpenSame} disabled={disabled.open}>Create the same swap as in Massa</button>
+          <label htmlFor="secretLock">secretLock : </label>
+          <input type="text" name="secretLock" value={openState.secretLock} onChange={handleChangeOpen} />
+          <button onClick={handleSubmitOpenSame} disabled={disabled.open}>Create the same swap as in Goerli</button>
           <p>Result : {openInfo}</p>
         </div>
         <h2>Close Swap : </h2>

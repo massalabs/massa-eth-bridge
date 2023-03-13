@@ -13,7 +13,7 @@ const NewHTLC = () => {
     const timelockRefSameSwap = React.useRef();
     const amountRef = React.useRef();
     const amountRefSameSwap = React.useRef();
-    const passwordRef = React.useRef();
+    const secretLockRef = React.useRef();
     const allowanceRef = React.useRef();
 
     // Creating variable to store smart contract infomration
@@ -85,13 +85,13 @@ const NewHTLC = () => {
         }
         const random = makeid(100)
         const randomInBytes = ethers.utils.toUtf8Bytes(random)
-        const randomhash = ethers.utils.sha256(randomInBytes)
+        const secretKey = ethers.utils.sha256(randomInBytes)
 
         // Convert hex string to unint8array and hash it
-        const lockString = ethers.utils.sha256(new Uint8Array(hexToBytes(randomhash)));
+        const secretLock = ethers.utils.sha256(new Uint8Array(hexToBytes(secretKey)));
 
         // Display secret to user
-        alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: " + randomhash);
+        alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: " + secretKey);
 
         // Getting all swap in statut "OPEN". Selecting last ID and increment 1.
         const filterOpen = contract_SWAP_ERC20.filters.Open()
@@ -100,14 +100,14 @@ const NewHTLC = () => {
         const newId = parseInt(String.fromCharCode(...lastId.substr(2).match(/.{2}/g).map(function (a) {
             return parseInt(a, 16);
         }))) + 1
-        const newIdInString = newId.toString()
-        const ID = ethers.utils.formatBytes32String(newIdInString)
+        const newIdString = newId.toString()
+        const ID = ethers.utils.formatBytes32String(newIdString)
 
         // Verifying amount input by user
         if (amount > 0 && amount < allowance && timelock >= 0) {
             // Creating tx and send to open swap
             //const amountFormatted = ethers.utils.parseUnits(amount.toString(), decimals);
-            await contract_SWAP_ERC20.open(ID, amount, CONTRACT_ADDRESS_ERC20, receiver, lockString, timelock)
+            await contract_SWAP_ERC20.open(ID, amount, CONTRACT_ADDRESS_ERC20, receiver, secretLock, timelock)
         } else {
             alert('error in your inputs')
         }
@@ -121,9 +121,9 @@ const NewHTLC = () => {
         const receiver = receiverRefSameSwap.current.value
         const amount = Number(amountRefSameSwap.current.value)
         const timelock = Number(timelockRefSameSwap.current.value)
-        const hash = String(passwordRef.current.value)
-        console.log('your hash secret : ', hash)
-        alert('Your secret will be revealed at the closing and your hash secret :' + hash)
+        const secretLock = String(secretLockRef.current.value)
+        console.log('your hash secret : ', secretLock)
+        alert('Your secret will be revealed at the closing and your hash secret :' + secretLock)
 
         // Getting all swap in statut "OPEN". Selecting last ID and increment 1.
         const filterOpen = contract_SWAP_ERC20.filters.Open()
@@ -132,13 +132,13 @@ const NewHTLC = () => {
         const newId = parseInt(String.fromCharCode(...lastId.substr(2).match(/.{2}/g).map(function (a) {
             return parseInt(a, 16);
         }))) + 1
-        const newIdInString = newId.toString()
-        const ID = ethers.utils.formatBytes32String(newIdInString)
+        const newIdString = newId.toString()
+        const ID = ethers.utils.formatBytes32String(newIdString)
 
         // Verifying amount input by user
         if (amount > 0 && amount < allowance && timelock >= 0) {
             // Creating tx and send to open swap
-            await contract_SWAP_ERC20.open(ID, amount, CONTRACT_ADDRESS_ERC20, receiver, hash, timelock)
+            await contract_SWAP_ERC20.open(ID, amount, CONTRACT_ADDRESS_ERC20, receiver, secretLock, timelock)
         } else {
             alert('error in your inputs')
         }
@@ -186,8 +186,8 @@ const NewHTLC = () => {
                         <input id="timelockSameSwap" type="number" ref={timelockRefSameSwap} />
                     </div>
                     <div>
-                        <label htmlFor="password">password : </label>
-                        <input id="password" type="text" ref={passwordRef} />
+                        <label htmlFor="secretLock">secretLock : </label>
+                        <input id="secretLock" type="text" ref={secretLockRef} />
                     </div>
                     <button type="submit">Create the same swap as in Massa</button>
                 </form>

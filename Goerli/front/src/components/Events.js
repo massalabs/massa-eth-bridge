@@ -48,10 +48,10 @@ const Events = () => {
         // Convert hex string to unint8array
         const secretKeyInBytes = new Uint8Array(hexToBytes(secretKey))
         // Convert hex unint8array to string and add "0x"
-        const secretKeyInString = "0x" + toHexString(secretKeyInBytes)
+        const secretKeyString = "0x" + toHexString(secretKeyInBytes)
         const swapWithSigner = contract_SWAP_ERC20.connect(signer);
         // Creating tx and send to close swap
-        await swapWithSigner.close(ID, secretKeyInString);
+        await swapWithSigner.close(ID, secretKeyString);
     };
 
 
