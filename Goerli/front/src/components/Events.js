@@ -36,16 +36,18 @@ const Events = () => {
 
     function toHexString(byteArray) {
         return Array.from(byteArray, function (byte) {
-          return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+            return ('0' + (byte & 0xFF).toString(16)).slice(-2);
         }).join('')
-      }
+    }
 
     // Running when form are submited
     const handleSubmit = (ID, index) => async (event) => {
         event.preventDefault();
 
         const secretKey = inputValues[index]
+        // Convert hex string to unint8array
         const secretKeyInBytes = new Uint8Array(hexToBytes(secretKey))
+        // Convert hex unint8array to string and add "0x"
         const secretKeyInString = "0x" + toHexString(secretKeyInBytes)
         const swapWithSigner = contract_SWAP_ERC20.connect(signer);
         // Creating tx and send to close swap

@@ -29,7 +29,7 @@ const NewHTLC = () => {
     const provider = new providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner()
 
-    // instantiating contracts to interact with them
+    // Instantiating contracts to interact with them
     const contract_SWAP_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_SWAP_ERC20, swapERC20.abi, signer);
     const contract_ERC20 = new ethers.Contract(CONTRACT_ADDRESS_ERC20, contractERC20.abi, signer);
 
@@ -87,10 +87,10 @@ const NewHTLC = () => {
         const randomInBytes = ethers.utils.toUtf8Bytes(random)
         const randomhash = ethers.utils.sha256(randomInBytes)
 
-        //Convert hex string to unint8array and hash it
+        // Convert hex string to unint8array and hash it
         const lockString = ethers.utils.sha256(new Uint8Array(hexToBytes(randomhash)));
 
-        //Display secret to user
+        // Display secret to user
         alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: " + randomhash);
 
         // Getting all swap in statut "OPEN". Selecting last ID and increment 1.
@@ -138,7 +138,6 @@ const NewHTLC = () => {
         // Verifying amount input by user
         if (amount > 0 && amount < allowance && timelock >= 0) {
             // Creating tx and send to open swap
-            //const amountFormatted = ethers.utils.parseUnits(amount.toString(), decimals);
             await contract_SWAP_ERC20.open(ID, amount, CONTRACT_ADDRESS_ERC20, receiver, hash, timelock)
         } else {
             alert('error in your inputs')

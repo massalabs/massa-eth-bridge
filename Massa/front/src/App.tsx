@@ -288,13 +288,13 @@ function Content() {
     // Creating random byte array and hash it
     const secret = ethers.sha256(randomBytes(32));
 
-    //Convert hex string to unint8array and hash it
+    // Convert hex string to unint8array and hash it
     const lockString = ethers.sha256(new Uint8Array(hexToBytes(secret)));
 
-    //Convert hex string to unint8array and remove the 0x at the beginning
+    // Convert hex string to unint8array and remove the 0x at the beginning
     const lock = new Uint8Array(hexToBytes(lockString)).subarray(1);
     
-    //Display secret to user
+    // Display secret to user
     alert("This is your secret. Please note it down as it will be required to close the swap\nSecret: "+secret);
 
     //Open the swap
@@ -312,13 +312,13 @@ function Content() {
   async function handleSubmitOpenSame() {
     setDisabled({ ...disabled, open: true });
 
-    //Convert hex string to unint8array and remove the 0x at the beginning
+    // Convert hex string to unint8array and remove the 0x at the beginning
     const lock = new Uint8Array(hexToBytes(openState.password)).subarray(1);
     
-    //Display secret to user
+    // Display secret to user
     alert("This is your secretLock.\nSecretLock: "+openState.password);
 
-    //Open the swap
+    // Open the swap
     const result = await funcOpen(openState.timeLock, openState.massaValue, openState.withdrawTrader, lock)
 
     setopenInfo("processing transaction...")
@@ -333,10 +333,15 @@ function Content() {
   async function handleSubmitClose() {
     setDisabled({ ...disabled, close: true });
 
+    // Convert hex string to unint8array
     const secretKeyInBytes = hexToBytes(closeState.secretKey);
     const finale = new Uint8Array(secretKeyInBytes)
+
+    // Close the swap
     const result = await funcClose(closeState.swapID, finale)
+
     setcloseInfo("transaction sent and in process")
+
     // Getting events
     const display = await DisplayEvent(result)
     // Storing result
@@ -356,13 +361,13 @@ function Content() {
     let secretLock = age_decode.nextUint8Array()
 
     const time = Number(timeLock)
-    const d = new Date(time);
-    const formattedmassaValue = (Number(massaValue) / 10 ** 9).toLocaleString();
+    const date = new Date(time);
+    const formattedMassaValue = (Number(massaValue) / 10 ** 9).toLocaleString();
 
     let infos = ['']
     infos.push(state)
-    infos.push(d.toString())
-    infos.push(formattedmassaValue)
+    infos.push(date.toString())
+    infos.push(formattedMassaValue)
     infos.push(trader)
     infos.push(withdrawTrader)
     infos.push("0x" + toHexString(secretLock))
@@ -380,6 +385,7 @@ function Content() {
 
   async function handleSubmitExpire() {
     setDisabled({ ...disabled, expire: true });
+    // Expire the swap
     const result = await funcExpire(expireState.swapID)
     setexpireInfo("transaction sent and in process")
     // Getting events
@@ -405,12 +411,12 @@ function Content() {
 
       const time = Number(timeLock)
       const d = new Date(time);
-      const formattedmassaValue = (Number(massaValue) / 10 ** 9).toLocaleString();
+      const formattedMassaValue = (Number(massaValue) / 10 ** 9).toLocaleString();
 
       let infos = ['']
       infos.push(state)
       infos.push(d.toString())
-      infos.push(formattedmassaValue)
+      infos.push(formattedMassaValue)
       infos.push(trader)
       infos.push(withdrawTrader)
       infos.push("0x" + toHexString(secretLock))

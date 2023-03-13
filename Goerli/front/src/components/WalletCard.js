@@ -1,11 +1,11 @@
 
-import React, { useState }  from 'react';
+import React, { useState } from 'react';
 import { ethers } from "ethers";
 import './WalletCard.css';
 
 const WalletCard = () => {
 
-        // Creating variable to store user's information
+    // Creating variable to store user's information
     const [walletAddress, setWalletAddress] = useState("");
     const [walletBalance, setWalletBalance] = useState("");
 

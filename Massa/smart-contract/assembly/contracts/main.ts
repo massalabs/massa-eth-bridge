@@ -1,5 +1,5 @@
 import { Storage, generateEvent, Address, transferCoins, sha256 } from '@massalabs/massa-as-sdk';
-import { Args, boolToByte, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
+import { Args, bytesToU64, stringToBytes, u64ToBytes } from '@massalabs/as-types';
 import { timestamp, transactionCreator, transferedCoins } from '@massalabs/massa-as-sdk/assembly/std/context';
 import { SWAP } from './types';
 import { CloseSwapRequest, ExpireSwapRequest, OpenSwapRequest, SwapRequest } from './requests';
@@ -133,29 +133,6 @@ export function expire(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 
   generateEvent('Swap expired');
   return stringToBytes('Swap expired');
-}
-
-export function swap(binaryArgs: StaticArray<u8>): StaticArray<u8> {
-  const args = new Args(binaryArgs);
-
-  // safely unwrap the request data
-  const requestData = args
-    .nextSerializable<SwapRequest>()
-    .expect('Cannot deserialize ExpireSwapRequest for given argument');
-
-  // searching swap with swapID
-  const swapExists = Storage.has(requestData.swapID);
-
-  assert(swapExists, 'Unable to find swap with swapID: ${requestData.swapID}')
-
-  // finding Swap with swapID
-  const storedSwap = Storage.get(stringToBytes(requestData.swapID));
-  // initiating swap with data find
-  const currentSwap = new Args(storedSwap).nextSerializable<SWAP>().unwrap();
-
-  // returning all informations about Swap
-  generateEvent(`${currentSwap.state.toString()}, ${currentSwap.secretLock.toString()}, ${currentSwap.secretKey.toString()}`);
-  return stringToBytes(`${currentSwap.state.toString()}, ${currentSwap.secretLock.toString()}, ${currentSwap.secretKey.toString()}`);
 }
 
 export function currentSwap(): u64 {
